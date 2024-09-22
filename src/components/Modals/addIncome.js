@@ -1,7 +1,7 @@
 import React from 'react';
 import { Button, Modal, Form, Input, DatePicker, Select } from 'antd';
 
-function AddIncomeModal({isIncomeModalVisible, handleIncomeCancel, onFinish}) {
+function AddIncomeModal({isIncomeModalVisible, handleIncomeCancel, onFinish, incomeTags}) {
     const [form] = Form.useForm();
   return (
     <Modal
@@ -17,6 +17,7 @@ function AddIncomeModal({isIncomeModalVisible, handleIncomeCancel, onFinish}) {
         onFinish={(values) => {
           onFinish(values, "income");
           form.resetFields();
+          handleIncomeCancel();
         }}
       >
         <Form.Item
@@ -59,10 +60,11 @@ function AddIncomeModal({isIncomeModalVisible, handleIncomeCancel, onFinish}) {
           rules={[{ required: true, message: "Please select a tag!" }]}
         >
           <Select className="select-input-2">
-            <Select.Option value="salary">Salary</Select.Option>
-            <Select.Option value="freelance">Freelance</Select.Option>
-            <Select.Option value="investment">Investment</Select.Option>
-            {/* Add more tags here */}
+          {incomeTags.map((tag, index) => (
+              <Select.Option key={index} value={tag}>
+                {tag}
+              </Select.Option>
+            ))}
           </Select>
         </Form.Item>
         <Form.Item>

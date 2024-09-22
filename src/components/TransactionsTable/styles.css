@@ -33,13 +33,19 @@
     align-items: center;
     box-shadow: var(--shadow);
     border-radius: 0.5rem !important;
-    padding: 0.2rem 0.5rem !important;
-  }
-  
-  .select-input > div {
+    padding: 0.65rem 0.5rem !important;
     border: none !important;
-
   }
+
+  .select-input:focus {
+    outline: none !important;
+  }
+
+  .select-input option {
+    border: none;
+  }
+
+
 
 
 

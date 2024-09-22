@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Button, Modal, Form, Input, DatePicker, Select } from 'antd';
+import { db } from '../../firebase';
+import { doc, getDoc } from 'firebase/firestore';
 
-function AddExpenseModal({isExpenseModalVisible, handleExpenseCancel, onFinish}) {
+function AddExpenseModal({isExpenseModalVisible, handleExpenseCancel, onFinish, user, expenseTags}) {
     const [form] = Form.useForm();
   return (
     <Modal
@@ -17,6 +19,7 @@ function AddExpenseModal({isExpenseModalVisible, handleExpenseCancel, onFinish})
         onFinish={(values) => {
           onFinish(values, "expense");
           form.resetFields();
+          handleExpenseCancel();
         }}
       >
         <Form.Item
@@ -59,10 +62,11 @@ function AddExpenseModal({isExpenseModalVisible, handleExpenseCancel, onFinish})
           rules={[{ required: true, message: "Please select a tag!" }]}
         >
           <Select className="select-input-2">
-            <Select.Option value="food">Food</Select.Option>
-            <Select.Option value="education">Education</Select.Option>
-            <Select.Option value="office">Office</Select.Option>
-            {/* Add more tags here */}
+            {expenseTags.map((tag, index) => (
+              <Select.Option key={index} value={tag}>
+                {tag}
+              </Select.Option>
+            ))}
           </Select>
         </Form.Item>
         <Form.Item>

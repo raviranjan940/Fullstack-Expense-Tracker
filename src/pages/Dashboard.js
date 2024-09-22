@@ -6,9 +6,10 @@ import AddIncomeModal from "../components/Modals/addIncome";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { auth, db } from "../firebase";
 import { toast } from "react-toastify";
-import { addDoc, collection, getDocs, query } from "firebase/firestore";
+import { addDoc, collection, deleteDoc, getDocs, query } from "firebase/firestore";
 import TransactionsTable from "../components/TransactionsTable";
 import Loader from "../components/Loader";
+import { useNavigate } from "react-router-dom";
 
 function Dashboard() {
   const [isExpenseModalVisible, setIsExpenseModalVisible] = useState(false);
@@ -19,8 +20,10 @@ function Dashboard() {
   const [expenses, setExpenses] = useState(0);
   const [income, setIncome] = useState(0);
   const [user] = useAuthState(auth);
+  const [expenseTags, setExpenseTags] = useState([]);
+  const [incomeTags, setIncomeTags] = useState([]);
 
-  // const navigate = useNavigate();
+  const navigate = useNavigate();
 
   const showExpenseModal = () => {
     setIsExpenseModalVisible(true);
@@ -101,7 +104,6 @@ function Dashboard() {
       const querySnapshot = await getDocs(q);
       let transactionsArray = [];
       querySnapshot.forEach((doc) => {
-        // doc.data() is never undefined for query doc snapshots
         transactionsArray.push(doc.data());
       });
       setTransactions(transactionsArray);
@@ -110,11 +112,36 @@ function Dashboard() {
     setLoading(false);
   }
 
+  async function reset() {
+    try {
+      const q = query(collection(db, `users/${user.uid}/transactions`));
+      const querySnapshot = await getDocs(q);
+      querySnapshot.forEach(async (doc) => {
+        await deleteDoc(doc.ref);
+      });
+    
+      // Clear local state and reset values
+      setTransactions([]);
+      setIncome(0);
+      setExpenses(0);
+      setTotalBalance(0);
+      toast.success("Transactions Reset Successfully!");
+    } catch (error) {
+      toast.error("Failed to reset transactions");
+    }
+  }
+  
+
 
 
   return (
     <div>
-      <Header />
+      <Header 
+        expenseTags={expenseTags} 
+        incomeTags={incomeTags} 
+        setExpenseTags={setExpenseTags}
+        setIncomeTags={setIncomeTags}
+      />
       {loading ? (
         <Loader />
       ) : (
@@ -125,18 +152,25 @@ function Dashboard() {
             totalBalance={totalBalance}
             showExpenseModal={showExpenseModal}
             showIncomeModal={showIncomeModal}
+            reset={reset}
           />
           <AddExpenseModal
+            expenseTags={expenseTags}
+            setExpenseTags={setExpenseTags}
             isExpenseModalVisible={isExpenseModalVisible}
             handleExpenseCancel={handleExpenseCancel}
             onFinish={onFinish}
           />
           <AddIncomeModal
+            incomeTags={incomeTags}
+            setIncomeTags={setIncomeTags}
             isIncomeModalVisible={isIncomeModalVisible}
             handleIncomeCancel={handleIncomeCancel}
             onFinish={onFinish}
           />
           <TransactionsTable 
+            incomeTags={incomeTags}
+            expenseTags={expenseTags}
             transactions={transactions} 
             addTransaction={addTransaction}
             fetchTransactions={fetchTransactions}

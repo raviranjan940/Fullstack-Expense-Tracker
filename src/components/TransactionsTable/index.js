@@ -1,5 +1,5 @@
 import React, { useRef, useState } from "react";
-import { Table, Select, Radio } from "antd";
+import { Table, Select,  Radio } from "antd";
 import SearchImg from "../../assets/search.svg";
 import { parse, unparse } from "papaparse";
 import { toast } from "react-toastify";
@@ -10,8 +10,9 @@ function TransactionsTable({
   transactions,
   addTransaction,
   fetchTransactions,
+  incomeTags,
+  expenseTags,
 }) {
-  const { Option } = Select;
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
   const [sortKey, setSortKey] = useState("");
@@ -100,7 +101,7 @@ function TransactionsTable({
   function exportToCsv() {
     const csv = unparse({
       fields: ["name", "type", "date", "amount", "tag"],
-	  data: transactions,
+      data: transactions,
     });
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
@@ -119,84 +120,85 @@ function TransactionsTable({
         padding: "0rem 2rem",
       }}
     >
-    	<div
-			style={{
-			display: "flex",
-			justifyContent: "space-between",
-			gap: "1rem",
-			alignItems: "center",
-			marginBottom: "1rem",
-			}}
-      	>
-			<div className="input-flex">
-			<img src={SearchImg} width="16" />
-			<input
-				value={search}
-				placeholder="Search by Name"
-				onChange={(e) => setSearch(e.target.value)}
-			/>
-			</div>
-			<Select
-				className="select-input"
-				onChange={(value) => setTypeFilter(value)}
-				value={typeFilter}
-				placeholder="Filter"
-				allowClear
-			>
-				<Option value="">All</Option>
-				<Option value="income">Income</Option>
-				<Option value="expense">Expense</Option>
-			</Select>
-      	</div>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          gap: "1rem",
+          alignItems: "center",
+          marginBottom: "1rem",
+        }}
+      >
+        <div className="input-flex">
+          <img src={SearchImg} width="16" />
+          <input
+            value={search}
+            placeholder="Search by Name"
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+        <select
+          className="select-input"
+          onChange={(e) => setSelectedTag(e.target.value)}
+          value={selectedTag}
+          placeholder="Filter"
+          allowClear
+        >
+          <option value="">All</option>
+          {incomeTags.map((tag) => ( 
+            <option value={tag}>{tag}</option>)
+          )}
+          {expenseTags.map((tag) => (
+            <option value={tag}>{tag}</option>)
+          )}
+        </select>
+      </div>
 
-      	<div className="my-table">
-			<div
-				style={{
-					display: "flex",
-					justifyContent: "space-between",
-					alignItems: "center",
-					width: "100%",
-					marginBottom: "1rem",
-				}}
-			>
-				<h2>My Transactions</h2>
+      <div className="my-table">
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            width: "100%",
+            marginBottom: "1rem",
+          }}
+        >
+          <h2>My Transactions</h2>
 
-				<Radio.Group
-					className="input-radio"
-					onChange={(e) => setSortKey(e.target.value)}
-					value={sortKey}
-				>
-					<Radio.Button value="">No Sort</Radio.Button>
-					<Radio.Button value="date">Sort by Date</Radio.Button>
-					<Radio.Button value="amount">Sort by Amount</Radio.Button>
-				</Radio.Group>
-				<div
-					style={{
-					display: "flex",
-					justifyContent: "center",
-					gap: "1rem",
-					width: "400px",
-					}}
-				>
-					<Button 
-						text={"Export to CSV"} 
-						onClick={exportToCsv}
-					/>
-					<label for="file-csv" className="btn btn-blue">
-					Import from CSV
-					</label>
-					<input
-						onChange={importFromCsv}
-						id="file-csv"
-						type="file"
-						accept=".csv"
-						required
-						style={{ display: "none" }}
-					/>
-				</div>
-			</div>
-        	<Table columns={columns} dataSource={dataSource} />
-      	</div>
+          <Radio.Group
+            className="input-radio"
+            onChange={(e) => setSortKey(e.target.value)}
+            value={sortKey}
+          >
+            <Radio.Button value="">No Sort</Radio.Button>
+            <Radio.Button value="date">Sort by Date</Radio.Button>
+            <Radio.Button value="amount">Sort by Amount</Radio.Button>
+          </Radio.Group>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "center",
+              gap: "1rem",
+              width: "400px",
+            }}
+          >
+            <Button text={"Export to CSV"} onClick={exportToCsv} />
+            <label for="file-csv" className="btn btn-blue">
+              Import from CSV
+            </label>
+            <input
+              onChange={importFromCsv}
+              id="file-csv"
+              type="file"
+              accept=".csv"
+              required
+              style={{ display: "none" }}
+            />
+          </div>
+        </div>
+        <Table columns={columns} dataSource={dataSource} />
+      </div>
     </div>
   );
 }

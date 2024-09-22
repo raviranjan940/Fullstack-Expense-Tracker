@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import "./styles.css";
 import { auth } from "../../firebase";
 import { useAuthState } from "react-firebase-hooks/auth";
@@ -6,16 +6,26 @@ import { useNavigate } from "react-router-dom";
 import { signOut } from "firebase/auth";
 import { toast } from "react-toastify";
 import userImg from "../../assets/user.svg";
+import ProfileModal from "../Profile";
 
-function Header() {
+function Header({expenseTags, incomeTags, setExpenseTags, setIncomeTags}) {
   const [user, loading] = useAuthState(auth);
+  const [isProfileModalVisible, setIsProfileModalVisible] = useState(false);
   const navigate = useNavigate();
+
+  const showProfileModal = () => {
+    setIsProfileModalVisible(true);
+  };
+
+  const handleProfileCancel = () => {
+    setIsProfileModalVisible(false);
+  };
 
   useEffect(() => {
     if (user) {
       navigate("/dashboard");
     }
-  }, [user, loading]);
+  }, [user, loading, navigate]);
 
   const logoutFunc = () => {
     try {
@@ -46,11 +56,20 @@ function Header() {
           <img 
             src={user.photoURL ? user.photoURL : userImg} 
             alt="profile"
-            style={{borderRadius: "50%", height: "2rem", width: "2rem"}}
+            style={{borderRadius: "50%", height: "3rem", width: "3rem", cursor: "pointer"}}
+            onClick={showProfileModal}
           />
-          <p className="logo link" onClick={logoutFunc}>
+          <ProfileModal
+            expenseTags={expenseTags}
+            incomeTags={incomeTags}
+            setExpenseTags={setExpenseTags}
+            setIncomeTags={setIncomeTags} 
+            isVisible={isProfileModalVisible} 
+            handleCancel={handleProfileCancel}
+          />
+          {/* <p className="logo link" onClick={logoutFunc}>
             Logout
-          </p>
+          </p> */}
         </div>
       )}
     </div>
