@@ -76,7 +76,7 @@ function ProfileModal({ isVisible, handleCancel, expenseTags, setExpenseTags, in
         <Form layout="vertical" onFinish={saveTags}>
           <Form.Item label="Expense Tags">
             <Input
-              value={expenseTags.join(", ")}
+              value={expenseTags?.join(", ")}
               onChange={(e) => setExpenseTags(e.target.value.split(",").map(tag => tag.trim()))}
               placeholder="Add expense tags (comma-separated)"
             />
@@ -84,7 +84,7 @@ function ProfileModal({ isVisible, handleCancel, expenseTags, setExpenseTags, in
 
           <Form.Item label="Income Tags">
             <Input
-              value={incomeTags.join(", ")}
+              value={incomeTags?.join(", ")}
               onChange={(e) => setIncomeTags(e.target.value.split(",").map(tag => tag.trim()))}
               placeholder="Add income tags (comma-separated)"
             />
