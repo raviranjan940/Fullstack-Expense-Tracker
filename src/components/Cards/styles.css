@@ -1,0 +1,27 @@
+.my-card {
+    box-shadow: var(--shadow);
+    min-width: 400px;
+    padding: 0.2rem !important;
+    font-family: "Montserrat", sans-serif;
+    margin: 2rem;
+    border-radius: 0.5rem;
+    flex: 1;
+}
+
+.ant-card-head-title{
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin: 0rem !important;
+}
+
+.my-row {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content:  space-between;
+    align-items: center;
+    margin: 2rem auto;
+}
+
+.my-card p {
+    margin: 0;
+}
