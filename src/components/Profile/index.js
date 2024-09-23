@@ -30,7 +30,6 @@ function ProfileModal({ isVisible, handleCancel, expenseTags, setExpenseTags, in
       }
     } catch (error) {
       toast.error("Failed to load tags");
-      console.error("Error fetching tags: ", error);
     }
     setLoading(false);
   };
@@ -43,10 +42,9 @@ function ProfileModal({ isVisible, handleCancel, expenseTags, setExpenseTags, in
         incomeTags: incomeTags,
       });
       toast.success("Tags updated successfully!");
-      handleCancel(); // Close the modal after saving
+      handleCancel();
     } catch (error) {
       toast.error("Failed to update tags");
-      console.error("Error updating tags: ", error);
     }
   };
 
@@ -67,10 +65,10 @@ function ProfileModal({ isVisible, handleCancel, expenseTags, setExpenseTags, in
 
   return (
     <Modal
-      title="Profile - Edit Tags"
+      title="Manage Your Tags"
       visible={isVisible}
       onCancel={handleCancel}
-      footer={null}  // We'll control the footer manually
+      footer={null}  
     >
       <div className="form-container">
         <Form layout="vertical" onFinish={saveTags}>

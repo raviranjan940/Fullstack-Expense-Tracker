@@ -7,6 +7,7 @@ import { signOut } from "firebase/auth";
 import { toast } from "react-toastify";
 import userImg from "../../assets/user.svg";
 import ProfileModal from "../Profile";
+import { Button } from "antd";
 
 function Header({expenseTags, incomeTags, setExpenseTags, setIncomeTags}) {
   const [user, loading] = useAuthState(auth);
@@ -52,7 +53,7 @@ function Header({expenseTags, incomeTags, setExpenseTags, setIncomeTags}) {
         Spendly.
       </p>
       {user && (
-        <div style={{display: "flex", alignItems: "center", gap: "0.75rem"}}>
+        <div style={{display: "flex", alignItems: "center", gap: "1rem"}}>
           <img 
             src={user.photoURL ? user.photoURL : userImg} 
             alt="profile"
@@ -67,9 +68,9 @@ function Header({expenseTags, incomeTags, setExpenseTags, setIncomeTags}) {
             isVisible={isProfileModalVisible} 
             handleCancel={handleProfileCancel}
           />
-          {/* <p className="logo link" onClick={logoutFunc}>
-            Logout
-          </p> */}
+          <button className="tag-btn" blue={true} onClick={showProfileModal}>
+            Manage Tags
+          </button>
         </div>
       )}
     </div>

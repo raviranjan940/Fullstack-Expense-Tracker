@@ -1,6 +1,6 @@
 .my-card {
     box-shadow: var(--shadow);
-    min-width: 400px;
+    min-width: 25%;
     padding: 0.2rem !important;
     font-family: "Montserrat", sans-serif;
     margin: 2rem;
@@ -20,8 +20,34 @@
     justify-content:  space-between;
     align-items: center;
     margin: 2rem auto;
+    width: 100%;
 }
 
 .my-card p {
     margin: 0;
+}
+
+
+
+/* Media query for mobile devices (max-width: 575.98px) */
+@media (max-width: 575.98px) {
+    .my-card {
+        min-width: 90%;
+        margin: 1rem;
+    }
+    
+    .ant-card-head-title{
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin: 0rem !important;
+    }
+    
+    .my-row {
+        margin: 2rem auto;
+        width: 100%;
+    }
+    
+    .my-card p {
+        margin: 0;
+    }
 }

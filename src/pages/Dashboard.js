@@ -1,15 +1,14 @@
 import React, { useEffect, useState } from "react";
-import Header from "../components/Header";
-import Cards from "../components/Cards";
+import { addDoc, collection, deleteDoc, getDocs, query } from "firebase/firestore";
+import TransactionsTable from "../components/TransactionsTable";
 import AddExpenseModal from "../components/Modals/addExpense";
 import AddIncomeModal from "../components/Modals/addIncome";
 import { useAuthState } from "react-firebase-hooks/auth";
-import { auth, db } from "../firebase";
-import { toast } from "react-toastify";
-import { addDoc, collection, deleteDoc, getDocs, query } from "firebase/firestore";
-import TransactionsTable from "../components/TransactionsTable";
 import Loader from "../components/Loader";
-import { useNavigate } from "react-router-dom";
+import Header from "../components/Header";
+import Cards from "../components/Cards";
+import { toast } from "react-toastify";
+import { auth, db } from "../firebase";
 
 function Dashboard() {
   const [isExpenseModalVisible, setIsExpenseModalVisible] = useState(false);
@@ -22,8 +21,6 @@ function Dashboard() {
   const [user] = useAuthState(auth);
   const [expenseTags, setExpenseTags] = useState([]);
   const [incomeTags, setIncomeTags] = useState([]);
-
-  const navigate = useNavigate();
 
   const showExpenseModal = () => {
     setIsExpenseModalVisible(true);

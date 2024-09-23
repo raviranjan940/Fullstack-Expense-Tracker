@@ -114,21 +114,8 @@ function TransactionsTable({
   }
 
   return (
-    <div
-      style={{
-        width: "97%",
-        padding: "0rem 2rem",
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          gap: "1rem",
-          alignItems: "center",
-          marginBottom: "1rem",
-        }}
-      >
+    <div className="main-container">
+      <div className="search-container">
         <div className="input-flex">
           <img src={SearchImg} width="16" />
           <input
@@ -155,15 +142,7 @@ function TransactionsTable({
       </div>
 
       <div className="my-table">
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            width: "100%",
-            marginBottom: "1rem",
-          }}
-        >
+        <div className="tab-grp-wrapper">
           <h2>My Transactions</h2>
 
           <Radio.Group
@@ -175,14 +154,7 @@ function TransactionsTable({
             <Radio.Button value="date">Sort by Date</Radio.Button>
             <Radio.Button value="amount">Sort by Amount</Radio.Button>
           </Radio.Group>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "center",
-              gap: "1rem",
-              width: "400px",
-            }}
-          >
+          <div className="btn-container">
             <Button text={"Export to CSV"} onClick={exportToCsv} />
             <label for="file-csv" className="btn btn-blue">
               Import from CSV
@@ -197,7 +169,7 @@ function TransactionsTable({
             />
           </div>
         </div>
-        <Table columns={columns} dataSource={dataSource} />
+        <Table className="table-mod" columns={columns} dataSource={dataSource} />
       </div>
     </div>
   );

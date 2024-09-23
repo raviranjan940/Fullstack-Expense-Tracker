@@ -19,11 +19,35 @@
     margin: 0;
 }
 
-.link {
-    opacity: 0.5;
+.tag-btn {
+    background-color: var(--white);
+    color: var(--theme);
+    border: none;
+    padding: 0.5rem 2rem;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 1rem;
+    transition: all 0.3s;
+    margin-top: 4px;
 }
 
-.link:hover {
-    opacity: 1;
-    transition: all 0.8s;
+.tag-btn:hover {
+    opacity: 0.8;
 }
+
+
+/* Styles for extra small devices (mobile phones, <576px) */
+@media (max-width: 575.98px) {
+    img {
+      height: 2rem;
+      width: 2rem;
+      display: none;
+    }
+  
+    .tag-btn {
+      font-size: 0.9rem;
+      padding: 0.5rem 1rem;
+    }
+}
+  
