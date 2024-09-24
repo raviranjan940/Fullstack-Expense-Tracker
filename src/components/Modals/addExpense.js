@@ -1,7 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { Button, Modal, Form, Input, DatePicker, Select } from 'antd';
-import { db } from '../../firebase';
-import { doc, getDoc } from 'firebase/firestore';
 
 function AddExpenseModal({isExpenseModalVisible, handleExpenseCancel, onFinish, user, expenseTags}) {
     const [form] = Form.useForm();

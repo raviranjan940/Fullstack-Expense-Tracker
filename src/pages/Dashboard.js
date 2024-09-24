@@ -9,10 +9,13 @@ import Header from "../components/Header";
 import Cards from "../components/Cards";
 import { toast } from "react-toastify";
 import { auth, db } from "../firebase";
+import Footer from "../components/Footer";
+import ResetWarningModal from "../components/Modals/resetBalance";
 
 function Dashboard() {
   const [isExpenseModalVisible, setIsExpenseModalVisible] = useState(false);
   const [isIncomeModalVisible, setIsIncomeModalVisible] = useState(false);
+  const [isWarningModalVisible, setIsWarningModalVisible] = useState(false);
   const [totalBalance, setTotalBalance] = useState(0);
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -36,6 +39,19 @@ function Dashboard() {
 
   const handleIncomeCancel = () => {
     setIsIncomeModalVisible(false);
+  };
+
+  const showWarningModal = () => {
+    setIsWarningModalVisible(true);
+  };
+
+  const handleWarningCancel = () => {
+    setIsWarningModalVisible(false);
+  };
+
+  const handleWarningConfirm = async () => {
+    setIsWarningModalVisible(false);
+    await reset(); // Reset after confirmation
   };
 
   useEffect(() => {
@@ -128,9 +144,6 @@ function Dashboard() {
     }
   }
   
-
-
-
   return (
     <div>
       <Header 
@@ -149,6 +162,7 @@ function Dashboard() {
             totalBalance={totalBalance}
             showExpenseModal={showExpenseModal}
             showIncomeModal={showIncomeModal}
+            showWarningModal={showWarningModal}
             reset={reset}
           />
           <AddExpenseModal
@@ -171,6 +185,15 @@ function Dashboard() {
             transactions={transactions} 
             addTransaction={addTransaction}
             fetchTransactions={fetchTransactions}
+          />
+          <Footer />
+
+          {/* Warning Modal */}
+          <ResetWarningModal
+            isVisible={isWarningModalVisible}
+            handleCancel={handleWarningCancel}
+            handleConfirm={handleWarningConfirm}
+            transactions={transactions} 
           />
         </>
       )}
