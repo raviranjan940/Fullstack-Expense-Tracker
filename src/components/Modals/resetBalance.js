@@ -42,7 +42,7 @@ function ResetWarningModal({
       </p>
 
       
-      <div style={{ display: "flex", justifyContent: "space-between", gap: "0.5rem" }}>
+      <div className="reset-modal" style={{ display: "flex", justifyContent: "space-between", gap: "0.5rem" }}>
         <Button type="primary" onClick={handleConfirm}>
           Reset Balance
         </Button>
