@@ -11,9 +11,10 @@
     border-width: 0;
     border-bottom-width: 1px;
     width: 100%;
-    padding: 0.5rem 0rem;
+    padding: 0.2rem 0rem;
     font-size: 1rem;
     opacity: 0.8;
+    range: none;
 }
 
 .custom-input:focus {
@@ -25,4 +26,16 @@
 .custom-input::placeholder {
     color: grey;
 } 
+
+/* Remove arrows from number input in Chrome, Safari, Edge, and Opera */
+.custom-input::-webkit-outer-spin-button,
+.custom-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Remove arrows from number input in Firefox */
+.custom-input[type="number"] {
+  -moz-appearance: textfield;
+}
 

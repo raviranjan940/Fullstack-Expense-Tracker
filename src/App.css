@@ -6,10 +6,10 @@
     height: 90vh;
 }
 
-/* Styles for extra small devices (mobile phones, <576px) */
 @media (max-width: 575.98px) {
     .reset-modal{
         flex-direction: column;
         
     }
 }
+
