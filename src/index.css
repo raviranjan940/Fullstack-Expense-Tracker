@@ -39,3 +39,20 @@ input {
   transition: all 0.3s;
 }
 
+.ant-picker-header {
+  justify-content: center !important;
+}
+
+.ant-picker-header > button {
+  width: fit-content !important;
+}
+
+.ant-picker-header-view {
+  display: flex !important; 
+  justify-content: center !important; 
+}
+
+.ant-picker-header-view > button {
+  width: fit-content !important;
+}
+

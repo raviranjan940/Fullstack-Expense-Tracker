@@ -1,4 +1,4 @@
-import React from 'react';
+import React from 'react'
 import { Button, Modal, Form, Input, DatePicker, Select } from 'antd';
 
 function AddExpenseModal({isExpenseModalVisible, handleExpenseCancel, onFinish, user, expenseTags}) {
@@ -51,7 +51,11 @@ function AddExpenseModal({isExpenseModalVisible, handleExpenseCancel, onFinish, 
             { required: true, message: "Please select the expense date!" },
           ]}
         >
-          <DatePicker className="custom-input" format="YYYY-MM-DD" />
+          <DatePicker
+            className="custom-input"
+            format="YYYY-MM-DD"
+            style={{ width: "100%" }} // Ensure it adjusts to the parent width
+          />
         </Form.Item>
         <Form.Item
           label="Tag"
@@ -74,7 +78,7 @@ function AddExpenseModal({isExpenseModalVisible, handleExpenseCancel, onFinish, 
         </Form.Item>
       </Form>
     </Modal>
-  )
+  );
 }
 
 export default AddExpenseModal;
