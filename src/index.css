@@ -1,3 +1,4 @@
+/* @import "~antd/dist/antd.css"; */
 @import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap');
 
 :root{
@@ -29,10 +30,12 @@ input {
   margin-top: -1rem !important;
 }
 
+/* .input-wrapper input::placeholder, */
 .custom-input::placeholder {
   color: rgba(0, 0, 0, 0.5);
 }
 
+/* .input-wrapper input:focus, */
 .custom-input:focus {
   outline: none;
   opacity: 1;
