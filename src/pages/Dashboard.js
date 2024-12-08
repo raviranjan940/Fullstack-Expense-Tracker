@@ -51,7 +51,7 @@ function Dashboard() {
 
   const handleWarningConfirm = async () => {
     setIsWarningModalVisible(false);
-    await reset(); // Reset after confirmation
+    await reset(); // Reset after confirmation is received
   };
 
   useEffect(() => {
