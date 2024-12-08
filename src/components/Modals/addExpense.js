@@ -52,9 +52,9 @@ function AddExpenseModal({isExpenseModalVisible, handleExpenseCancel, onFinish, 
           ]}
         >
           <DatePicker
+            inputReadOnly
             className="custom-input"
             format="YYYY-MM-DD"
-            style={{ width: "100%" }} // Ensure it adjusts to the parent width
           />
         </Form.Item>
         <Form.Item

@@ -51,7 +51,11 @@ function AddIncomeModal({isIncomeModalVisible, handleIncomeCancel, onFinish, inc
             { required: true, message: "Please select the income date!" },
           ]}
         >
-          <DatePicker format="YYYY-MM-DD" className="custom-input" />
+          <DatePicker 
+            inputReadOnly 
+            format="YYYY-MM-DD" 
+            className="custom-input" 
+          />
         </Form.Item>
         <Form.Item
           style={{ fontWeight: 600 }}
