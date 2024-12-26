@@ -77,6 +77,20 @@
     gap: 1rem;
 }
 
+.start-end-date {
+  text-align: center;
+  margin: 1rem 0rem;
+  font-size: 0.9rem;
+  padding: 0.5rem !important;
+  background-color: #fff;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  height: auto !important;
+}
+
 
 @media (max-width: 575.98px) {
   .my-table {

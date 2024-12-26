@@ -15,20 +15,29 @@ function ProfileModal({ isVisible, handleCancel, expenseTags, setExpenseTags, in
 
   useEffect(() => {
     if (user) {
-      fetchTags();
+      fetchTags(); // Fetch tags when user is authenticated
     }
-  }, [user]);
+  }, [user]); // This effect will run when the user changes
 
   const fetchTags = async () => {
     setLoading(true);
     try {
       const docRef = doc(db, "users", user.uid);
       const docSnap = await getDoc(docRef);
+      
       if (docSnap.exists()) {
-        setExpenseTags(docSnap.data().expenseTags || []);
-        setIncomeTags(docSnap.data().incomeTags || []);
+        // Log the fetched data for debugging
+        console.log("Fetched user tags:", docSnap.data());
+
+        setExpenseTags(docSnap.data().expenseTags || []); // Set fetched tags or fallback to empty array
+        setIncomeTags(docSnap.data().incomeTags || []); // Set fetched tags or fallback to empty array
+      } else {
+        console.log("No tags found for this user.");
+        setExpenseTags([]); // Fallback to empty array if no tags exist
+        setIncomeTags([]); // Fallback to empty array if no tags exist
       }
     } catch (error) {
+      console.error("Error fetching tags:", error);
       toast.error("Failed to load tags");
     }
     setLoading(false);
@@ -44,6 +53,7 @@ function ProfileModal({ isVisible, handleCancel, expenseTags, setExpenseTags, in
       toast.success("Tags updated successfully!");
       handleCancel();
     } catch (error) {
+      console.error("Error saving tags:", error);
       toast.error("Failed to update tags");
     }
   };
