@@ -90,13 +90,16 @@ function TransactionsTable({
 
   let sortedTransactions = [...filteredTransactions].sort((a, b) => {
     if (sortKey === "date") {
-      return new Date(a.date) - new Date(b.date);
+      const dateA = a.date ? new Date(a.date.split('-').reverse().join('-')) : new Date();
+      const dateB = b.date ? new Date(b.date.split('-').reverse().join('-')) : new Date();
+      return dateA - dateB;
     } else if (sortKey === "amount") {
       return a.amount - b.amount;
     } else {
-      return 0;
+      return 0; // No sorting applied
     }
   });
+  
 
   const dataSource = sortedTransactions.map((transaction, index) => ({
     key: index,
