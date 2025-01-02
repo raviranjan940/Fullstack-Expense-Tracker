@@ -61,7 +61,7 @@ function Dashboard() {
   const onFinish = (values, type) => {
     const newTransaction = {
       type: type,
-      date: values.date.format("YYYY-MM-DD"),
+      date: values.date.format("DD-MM-YYYY"),
       amount: parseFloat(values.amount),
       tag: values.tag,
       name: values.name,
