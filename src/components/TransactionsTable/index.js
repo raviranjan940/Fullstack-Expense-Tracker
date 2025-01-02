@@ -212,7 +212,7 @@ function TransactionsTable({
           }
         },
         columnStyles: {
-          0: { halign: "center" }, // Center align the TOTAL label
+          0: { halign: "left" }, // Center align the TOTAL label
         },
       });
 
