@@ -54,7 +54,7 @@ function AddExpenseModal({isExpenseModalVisible, handleExpenseCancel, onFinish, 
           <DatePicker
             inputReadOnly
             className="custom-input"
-            format="YYYY-MM-DD"
+            format="DD-MM-YYYY"
           />
         </Form.Item>
         <Form.Item

@@ -53,7 +53,7 @@ function AddIncomeModal({isIncomeModalVisible, handleIncomeCancel, onFinish, inc
         >
           <DatePicker 
             inputReadOnly 
-            format="YYYY-MM-DD" 
+            format="DD-MM-YYYY" 
             className="custom-input" 
           />
         </Form.Item>
