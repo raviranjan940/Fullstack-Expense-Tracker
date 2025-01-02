@@ -101,10 +101,20 @@ function TransactionsTable({
             (transaction) => transaction.type === exportType
           );
   
+    // Calculate the total sum of transactions
+    const totalAmount = filteredData.reduce((sum, transaction) => sum + transaction.amount, 0);
+  
     if (exportFormat === "csv") {
+      // Add a separator and the total row at the end of the data
+      const csvData = [
+        ...filteredData.map(({ name, type, date, amount, tag }) => [name, type, date, amount, tag]),
+        ["", "", "", "", ""], // Empty separator row
+        ["TOTAL", "", "", "", totalAmount], // Total row
+      ];
+  
       const csv = unparse({
-        fields: ["name", "type", "date", "amount", "tag"],
-        data: filteredData,
+        fields: ["Name", "Type", "Date", "Amount", "Tag"],
+        data: csvData,
       });
       const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
       const url = URL.createObjectURL(blob);
@@ -125,35 +135,40 @@ function TransactionsTable({
         transaction.tag,
       ]);
   
-      // Import logo (ensure the logo is accessible, you can also use a URL if it's hosted online)
-      const logo = require("../../assets/satyalok.png"); // Adjust this path as needed
+      // Add an empty row for spacing and then the Total row with bold styling
+      tableRows.push(["", "", "", "", ""]); // Empty separator row
+      tableRows.push(["TOTAL", "", "", "", totalAmount]); // Total row
   
-      // Get the dimensions of the logo
-      const logoWidth = 70; // Adjust according to your logo's width
-      const logoHeight = 20; // Adjust according to your logo's height
+      // Import logo
+      const logo = require("../../assets/satyalok.png"); // Adjust path if needed
+      const logoWidth = 70;
+      const logoHeight = 20;
+      const xPosition = (doc.internal.pageSize.width - logoWidth) / 2;
+      const yPosition = 10;
   
-      // Calculate the position to center the logo
-      const xPosition = (doc.internal.pageSize.width - logoWidth) / 2; // Center horizontally
-      const yPosition = 10; // Position logo at the top
-  
-      // Add logo to PDF (centered)
       doc.addImage(logo, "PNG", xPosition, yPosition, logoWidth, logoHeight, undefined, "NONE");
-  
-      // Set title
       doc.setFontSize(18);
       doc.text("Satyalok Transactions Report", 105, 40, null, null, "center");
-  
-      // Add some space after the title to separate it from the table
       doc.setFontSize(12);
       doc.text("Below is the list of transactions:", 105, 50, null, null, "center");
   
-      // Create the table
       doc.autoTable({
-        startY: 60, // Ensure the table starts below the text
+        startY: 60,
         head: [tableColumn],
         body: tableRows,
-        margin: { top: 10 }, // Add margin for better spacing
-        theme: "striped", // You can add a striped theme for better visibility
+        margin: { top: 10 },
+        theme: "striped",
+        styles: {
+          fontSize: 10,
+        },
+        bodyStyles: (row, data) => {
+          if (row[0] === "TOTAL") {
+            return { fontStyle: "bold", fillColor: [220, 220, 220] }; // Highlight the row
+          }
+        },
+        columnStyles: {
+          0: { halign: "center" }, // Center align the TOTAL label
+        },
       });
   
       // Save the PDF
@@ -161,6 +176,8 @@ function TransactionsTable({
     }
     setIsModalVisible(false);
   }
+  
+  
   
 
   return (

@@ -3,11 +3,8 @@ import "./styles.css";
 import { auth } from "../../firebase";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { useNavigate } from "react-router-dom";
-import { signOut } from "firebase/auth";
-import { toast } from "react-toastify";
 import userImg from "../../assets/user.svg";
 import ProfileModal from "../Profile";
-import { Button } from "antd";
 
 function Header({expenseTags, incomeTags, setExpenseTags, setIncomeTags}) {
   const [user, loading] = useAuthState(auth);
@@ -28,20 +25,6 @@ function Header({expenseTags, incomeTags, setExpenseTags, setIncomeTags}) {
     }
   }, [user, loading, navigate]);
 
-  const logoutFunc = () => {
-    try {
-      signOut(auth)
-        .then(() => {
-          toast.success("Logged out successfully");
-          navigate("/");
-        })
-        .catch((error) => {
-          toast.error(error.message);
-        });
-    } catch (e) {
-      toast.error(e.message);
-    }
-  };
 
   const logoClick = () => {
     window.open("https://www.satyalok.in", "_blank");
