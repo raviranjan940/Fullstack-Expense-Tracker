@@ -33,22 +33,28 @@ function TransactionsTable({
         header: true,
         complete: async function (results) {
           for (const transaction of results.data) {
-            const newTransaction = {
-              ...transaction,
-              amount: parseInt(transaction.amount),
-            };
-            await addTransaction(newTransaction, true);
+            if (transaction.Name && transaction.Type && transaction.Date && transaction.Tag && transaction.Amount) {
+              const newTransaction = {
+                name: transaction.Name,
+                type: transaction.Type,
+                date: transaction.Date,
+                tag: transaction.Tag,
+                amount: parseInt(transaction.Amount),
+              };
+              console.log("newTransaction", newTransaction);
+              await addTransaction(newTransaction, true);
+            }
           }
-        },
+          toast.success("All Transactions Added");
+          await fetchTransactions();
+          event.target.files = null;
+        }
       });
-      toast.success("All Transactions Added");
-      fetchTransactions();
-      event.target.files = null;
     } catch (e) {
       toast.error(e.message);
     }
   }
-
+  
   const columns = [
     { title: "Name", dataIndex: "name", key: "name" },
     { title: "Amount", dataIndex: "amount", key: "amount" },
@@ -83,10 +89,14 @@ function TransactionsTable({
     }
   });
 
+  
+
   const dataSource = sortedTransactions.map((transaction, index) => ({
     key: index,
     ...transaction,
   }));
+
+  console.log("dataSource", dataSource);
 
   function showExportModal(format) {
     setExportFormat(format);
@@ -94,89 +104,89 @@ function TransactionsTable({
   }
 
   function handleExport() {
-    const filteredData =
-      exportType === "all"
-        ? sortedTransactions
-        : sortedTransactions.filter(
-            (transaction) => transaction.type === exportType
-          );
-  
-    // Calculate the total sum of transactions
-    const totalAmount = filteredData.reduce((sum, transaction) => sum + transaction.amount, 0);
-  
-    if (exportFormat === "csv") {
-      // Add a separator and the total row at the end of the data
-      const csvData = [
-        ...filteredData.map(({ name, type, date, amount, tag }) => [name, type, date, amount, tag]),
-        ["", "", "", "", ""], // Empty separator row
-        ["TOTAL", "", "", "", totalAmount], // Total row
-      ];
-  
-      const csv = unparse({
-        fields: ["Name", "Type", "Date", "Amount", "Tag"],
-        data: csvData,
-      });
-      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = "transactions.csv";
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    } else if (exportFormat === "pdf") {
-      const doc = new jsPDF();
-      const tableColumn = ["Name", "Type", "Date", "Amount", "Tag"];
-      const tableRows = filteredData.map((transaction) => [
-        transaction.name,
-        transaction.type,
-        transaction.date,
-        transaction.amount,
-        transaction.tag,
-      ]);
-  
-      // Add an empty row for spacing and then the Total row with bold styling
-      tableRows.push(["", "", "", "", ""]); // Empty separator row
-      tableRows.push(["TOTAL", "", "", "", totalAmount]); // Total row
-  
-      // Import logo
-      const logo = require("../../assets/satyalok.png"); // Adjust path if needed
-      const logoWidth = 70;
-      const logoHeight = 20;
-      const xPosition = (doc.internal.pageSize.width - logoWidth) / 2;
-      const yPosition = 10;
-  
-      doc.addImage(logo, "PNG", xPosition, yPosition, logoWidth, logoHeight, undefined, "NONE");
-      doc.setFontSize(18);
-      doc.text("Satyalok Transactions Report", 105, 40, null, null, "center");
-      doc.setFontSize(12);
-      doc.text("Below is the list of transactions:", 105, 50, null, null, "center");
-  
-      doc.autoTable({
-        startY: 60,
-        head: [tableColumn],
-        body: tableRows,
-        margin: { top: 10 },
-        theme: "striped",
-        styles: {
-          fontSize: 10,
-        },
-        bodyStyles: (row, data) => {
-          if (row[0] === "TOTAL") {
-            return { fontStyle: "bold", fillColor: [220, 220, 220] }; // Highlight the row
-          }
-        },
-        columnStyles: {
-          0: { halign: "center" }, // Center align the TOTAL label
-        },
-      });
-  
-      // Save the PDF
-      doc.save("transactions.pdf");
-    }
-    setIsModalVisible(false);
+  const filteredData =
+    exportType === "all"
+      ? sortedTransactions
+      : sortedTransactions.filter(
+          (transaction) => transaction.type === exportType
+        );
+
+  // Calculate the total sum of transactions
+  const totalAmount = filteredData.reduce((sum, transaction) => sum + transaction.amount, 0);
+
+  if (exportFormat === "csv") {
+    // Add a separator and the total row at the end of the data
+    const csvData = [
+      ...filteredData.map(({ name, type, date, tag, amount}) => [name, type, date, tag, amount]),
+      // ["", "", "", "", ""], // Empty separator row
+      ["TOTAL", "", "", "", totalAmount], // Total row
+    ];
+
+    const csv = unparse({
+      fields: ["Name", "Type", "Date", "Tag", "Amount"],
+      data: csvData,
+    });
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "transactions.csv";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  } else if (exportFormat === "pdf") {
+    const doc = new jsPDF();
+    const tableColumn = ["Name", "Type", "Date", "Tag", "Amount"];
+    const tableRows = filteredData.map((transaction) => [
+      transaction.name,
+      transaction.type,
+      transaction.date,
+      transaction.tag,
+      transaction.amount,
+    ]);
+
+    // Add an empty row for spacing and then the Total row with bold styling
+    // tableRows.push(["", "", "", "", ""]); // Empty separator row
+    tableRows.push(["TOTAL", "", "", "", totalAmount]); // Total row
+
+    // Import logo
+    const logo = require("../../assets/satyalok.png"); // Adjust path if needed
+    const logoWidth = 70;
+    const logoHeight = 20;
+    const xPosition = (doc.internal.pageSize.width - logoWidth) / 2;
+    const yPosition = 10;
+
+    doc.addImage(logo, "PNG", xPosition, yPosition, logoWidth, logoHeight, undefined, "NONE");
+    doc.setFontSize(18);
+    doc.text("Satyalok Transactions Report", 105, 40, null, null, "center");
+    doc.setFontSize(12);
+    doc.text("Below is the list of transactions:", 105, 50, null, null, "center");
+
+    doc.autoTable({
+      startY: 60,
+      head: [tableColumn],
+      body: tableRows,
+      margin: { top: 10 },
+      theme: "striped",
+      styles: {
+        fontSize: 10,
+      },
+      bodyStyles: (row, data) => {
+        if (row[0] === "TOTAL") {
+          return { fontStyle: "bold", fillColor: [220, 220, 220] }; // Highlight the row
+        }
+      },
+      columnStyles: {
+        0: { halign: "center" }, // Center align the TOTAL label
+      },
+    });
+
+    // Save the PDF
+    doc.save("transactions.pdf");
   }
-  
+  setIsModalVisible(false);
+}
+
   
   
 
