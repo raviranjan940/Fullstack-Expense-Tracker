@@ -607,7 +607,7 @@ function TransactionsTable({
               formatter={(value) =>
                 `Rs ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
               }
-              parser={(value) => value.replace(/₹\s?|(,*)/g, "")}
+              parser={(value) => value.replace(/Rs\s?|(,*)/g, "")}
               placeholder="Enter amount"
             />
           </Form.Item>
