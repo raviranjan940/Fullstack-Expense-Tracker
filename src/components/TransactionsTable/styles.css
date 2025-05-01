@@ -91,6 +91,10 @@
   height: auto !important;
 }
 
+.ant-modal .ant-modal-footer >.ant-btn+.ant-btn {
+  margin-inline-start: 0px; 
+}
+
 
 @media (max-width: 575.98px) {
   .my-table {

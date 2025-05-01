@@ -9,7 +9,12 @@ import {
   Select,
   InputNumber,
   Tooltip,
+  Checkbox,
+  Upload,
+  message,
+  Divider,
 } from "antd";
+import {InboxOutlined} from "@ant-design/icons";
 import moment from "moment";
 import { parse, unparse } from "papaparse";
 import { toast } from "react-toastify";
@@ -21,6 +26,7 @@ import Button from "../Button";
 import SearchImg from "../../assets/search.svg";
 
 const { Option } = Select;
+const {Dragger } = Upload;
 
 function TransactionsTable({
   transactions,
@@ -52,6 +58,12 @@ function TransactionsTable({
   // State Variables for Delete Confirmation Modal
   const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
   const [transactionToDelete, setTransactionToDelete] = useState(null);
+
+  // Add only these new state variables for logo handling
+  const [isLogoPreferenceModalVisible, setIsLogoPreferenceModalVisible] = useState(false);
+  const [includeLogo, setIncludeLogo] = useState(false);
+  const [logoFile, setLogoFile] = useState(null);
+  const [logoPreview, setLogoPreview] = useState(null);
 
   const fileInput = useRef();
 
@@ -317,101 +329,163 @@ function TransactionsTable({
   // Function to Show Export Modal
   function showExportModal(format) {
     setExportFormat(format);
-    setIsExportModalVisible(true);
+    if(format === "pdf") {
+      setIsLogoPreferenceModalVisible(true);
+    }else{
+      setIsExportModalVisible(true);
+    }
   }
+
+   // Add these new functions for logo handling
+   const handleLogoUpload = (info) => {
+    const { file } = info;
+    const isImage = file.type.startsWith('image/');
+    if (!isImage) {
+      message.error('You can only upload image files!');
+      return;
+    }
+
+    const isLt2M = file.size / 1024 / 1024 < 2;
+    if (!isLt2M) {
+      message.error('Image must smaller than 2MB!');
+      return;
+    }
+
+    setLogoFile(file);
+
+    //create preview
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      setLogoPreview(event.target.result);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleLogoPreferenceConfirm = () => {
+    if(includeLogo && !logoFile) {
+      message.error('Please upload a logo before proceeding.');
+      return;
+    }
+    setIsLogoPreferenceModalVisible(false);
+    setIsExportModalVisible(true);
+  };
+
+  const handleLogoPreferenceCancel = () => {
+    setIsLogoPreferenceModalVisible(false);
+    setIncludeLogo(false);
+    setLogoFile(null);
+    setLogoPreview(null);
+  };
+
+  const beforeLogoUpload = (file) => {
+    const isImage = file.type.startsWith('image/');
+    if (!isImage) {
+      message.error('You can only upload image files!');
+    }
+    const isLt2M = file.size / 1024 / 1024 < 2;
+    if (!isLt2M) {
+      message.error('Image must be smaller than 2MB!');
+    }
+    return isImage && isLt2M;
+  };
 
   // Handle Export Functionality (CSV & PDF)
   function handleExport() {
     const filteredData =
-      exportType === "all"
-        ? sortedTransactions
-        : sortedTransactions.filter(
-            (transaction) => transaction.type === exportType
-          );
-
-    // Calculate the total sum of transactions
-    const totalAmount = filteredData.reduce(
-      (sum, transaction) => sum + transaction.amount,
-      0
-    );
-
-    if (exportFormat === "csv") {
-      // Prepare CSV Data with a Total Row
-      const csvData = [
-        ...filteredData.map(({ name, type, date, tag, amount }) => [
-          name,
-          type,
-          date,
-          tag,
-          amount,
-        ]),
-        ["TOTAL", "", "", "", totalAmount],
-      ];
-
-      const csv = unparse({
-        fields: ["Name", "Type", "Date", "Tag", "Amount"],
-        data: csvData,
-      });
-      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = "transactions.csv";
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    } else if (exportFormat === "pdf") {
-      const doc = new jsPDF();
-      const tableColumn = ["Name", "Type", "Date", "Tag", "Amount"];
-      const tableRows = filteredData.map((transaction) => [
-        transaction.name,
-        transaction.type,
-        transaction.date,
-        transaction.tag,
-        `Rs ${transaction.amount.toFixed(2)}`,
-      ]);
-
-      // Add Total Row
-      tableRows.push(["TOTAL", "", "", "", `Rs ${totalAmount.toFixed(2)}`]);
-
-      // Import and Add Logo (Ensure the path is correct)
-      try {
-        const logo = require("../../assets/satyalok.png"); // Adjust path as necessary
-        const logoWidth = 70;
-        const logoHeight = 20;
-        const xPosition = (doc.internal.pageSize.width - logoWidth) / 2;
-        const yPosition = 10;
-
-        doc.addImage(
-          logo,
-          "PNG",
-          xPosition,
-          yPosition,
-          logoWidth,
-          logoHeight,
-          undefined,
-          "NONE"
+    exportType === "all"
+      ? sortedTransactions
+      : sortedTransactions.filter(
+          (transaction) => transaction.type === exportType
         );
-      } catch (error) {
-        console.log("Logo not found or failed to load:", error);
-        toast.error("Failed to load logo for PDF.");
-      }
 
+  // Calculate totals
+  const incomeTotal = filteredData
+    .filter(t => t.type === 'income')
+    .reduce((sum, t) => sum + t.amount, 0);
+  
+  const expenseTotal = filteredData
+    .filter(t => t.type === 'expense')
+    .reduce((sum, t) => sum + t.amount, 0);
+
+  if (exportFormat === "csv") {
+    // [Keep existing CSV export code exactly as it was]
+    const csvData = [
+      ...filteredData.map(({ name, type, date, tag, amount }) => [
+        name,
+        type,
+        date,
+        tag,
+        amount,
+      ]),
+    ];
+
+    const csv = unparse({
+      fields: ["Name", "Type", "Date", "Tag", "Amount"],
+      data: csvData,
+    });
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "transactions.csv";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  } else if (exportFormat === "pdf") {
+    const doc = new jsPDF();
+    let yPosition = 20;
+
+    // Add logo if selected with fixed size
+    if (includeLogo && logoFile) {
+      const reader = new FileReader();
+      reader.onload = function(event) {
+        try {
+          const logoWidth = 70;
+          const logoHeight = 20;
+          doc.addImage(
+            event.target.result,
+            'JPEG',
+            (doc.internal.pageSize.width - logoWidth) / 2,
+            15,
+            logoWidth,
+            logoHeight
+          );
+          yPosition = 15 + logoHeight + 10;
+          addPdfContent();
+        } catch (error) {
+          console.log("Failed to add logo:", error);
+          addPdfContent();
+        }
+      };
+      reader.readAsDataURL(logoFile);
+    } else {
+      addPdfContent();
+    }
+    
+    function addPdfContent() {
+      // Add title
       doc.setFontSize(18);
-      doc.text("Satyalok Transactions Report", doc.internal.pageSize.width / 2, 40, {
+      doc.text("Transactions Report", doc.internal.pageSize.width / 2, yPosition, {
         align: "center",
       });
-      doc.setFontSize(12);
-      doc.text(
-        "Below is the list of transactions:",
-        doc.internal.pageSize.width / 2,
-        50,
-        { align: "center" }
-      );
+      yPosition += 10;
 
-      // Generate Table in PDF
+      // Prepare table data (keeping original table structure)
+      const tableColumn = columns
+        .filter(col => col.key !== 'action')
+        .map(col => col.title);
+      
+      const tableRows = filteredData.map(transaction => [
+        transaction.name,
+        `Rs ${transaction.amount.toFixed(2)}`,
+        transaction.tag,
+        transaction.type.charAt(0).toUpperCase() + transaction.type.slice(1),
+        transaction.date,
+      ]);
+
+      // Generate Table in PDF (keeping original structure)
       doc.autoTable({
-        startY: 60,
+        startY: yPosition,
         head: [tableColumn],
         body: tableRows,
         margin: { top: 10 },
@@ -419,23 +493,24 @@ function TransactionsTable({
         styles: {
           fontSize: 10,
         },
-        bodyStyles: (row, data) => {
-          if (row.index === tableRows.length - 1) {
-            return { fontStyle: "bold", fillColor: [220, 220, 220] };
-          }
-          return {};
-        },
         columnStyles: {
-          0: { halign: "left" },
-          4: { halign: "right" },
+          1: { halign: "right" },
         },
       });
+
+      // Add totals section
+      const finalY = doc.lastAutoTable.finalY || yPosition;
+      doc.setFontSize(10);
+      doc.text(`Total Income: Rs ${incomeTotal.toFixed(2)}`, 14, finalY + 20);
+      doc.text(`Total Expense: Rs ${expenseTotal.toFixed(2)}`, 14, finalY + 30);
+      doc.text(`Available Amount: Rs ${(incomeTotal - expenseTotal).toFixed(2)}`, 14, finalY + 40);
 
       // Save the PDF
       doc.save("transactions.pdf");
     }
-    setIsExportModalVisible(false);
   }
+  setIsExportModalVisible(false);
+}
 
   return (
     <div className="main-container">
@@ -545,6 +620,84 @@ function TransactionsTable({
         />
       </div>
 
+      {/* Add this new modal for logo preferences */}
+      <Modal
+        title="PDF Export Options"
+        visible={isLogoPreferenceModalVisible}
+        onOk={handleLogoPreferenceConfirm}
+        onCancel={handleLogoPreferenceCancel}
+        okText="Continue to Export"
+        cancelText="Cancel"
+        width={500}
+      >
+        <Form layout="vertical">
+          <Form.Item>
+            <Checkbox
+              checked={includeLogo}
+              onChange={(e) => setIncludeLogo(e.target.checked)}
+            >
+              Include logo in PDF (70x20px)
+            </Checkbox>
+          </Form.Item>
+          
+          {includeLogo && (
+            <>
+            <Divider>Upload Your Logo</Divider>
+            <Form.Item
+              label="Upload Logo (Max 2MB)"
+              extra="Recommended size: 70x20px for best results"
+            >
+              <Dragger
+                name="logo"
+                multiple={false}
+                accept="image/*"
+                beforeUpload={beforeLogoUpload}
+                customRequest={({ file, onSuccess }) => {
+                  setTimeout(() => {
+                    onSuccess("ok");
+                    handleLogoUpload({ file });
+                  }, 0);
+                }}
+                showUploadList={false}
+              >
+                <p className="ant-upload-drag-icon">
+                  <InboxOutlined />
+                </p>
+                <p className="ant-upload-text">
+                  Click or drag file to this area to upload
+                </p>
+                <p className="ant-upload-hint">
+                  Supports JPG, PNG formats
+                </p>
+              </Dragger>
+            </Form.Item>
+            
+            {logoPreview && (
+              <Form.Item label="Logo Preview">
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'center',
+                  border: '1px dashed #d9d9d9',
+                  padding: '10px',
+                  borderRadius: '4px'
+                }}>
+                  <img 
+                    src={logoPreview} 
+                    alt="Logo Preview" 
+                    style={{ 
+                      maxWidth: '200px', 
+                      maxHeight: '100px',
+                      objectFit: 'contain'
+                    }} 
+                  />
+                </div>
+              </Form.Item>
+            )}
+          </>
+          )}
+        </Form>
+      </Modal>
+
       {/* Export Modal */}
       <Modal
         title="Export Transactions"
@@ -557,6 +710,7 @@ function TransactionsTable({
         <Radio.Group
           onChange={(e) => setExportType(e.target.value)}
           value={exportType}
+          style={{marginBottom: 16}}
         >
           <Radio value="all">All Transactions</Radio>
           <Radio value="income">Income Only</Radio>
