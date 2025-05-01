@@ -524,19 +524,61 @@ function TransactionsTable({
     });
 
     // Add totals section on the last page
-    const finalY = doc.lastAutoTable.finalY || yPosition;
+    let finalY = doc.lastAutoTable.finalY || yPosition;
+
+    // Add space before totals section (20 units)
+    finalY += 20;
     
     // Check if we need a new page for totals
-    if (finalY > doc.internal.pageSize.height - 50) {
+    if (finalY > doc.internal.pageSize.height - 60) {
       doc.addPage();
+      finalY = 20;
     }
-    
-    doc.setFontSize(10);
-    doc.text(`Total Income: Rs ${incomeTotal.toFixed(2)}`, 14, doc.autoTable.previous.finalY + 20);
-    doc.text(`Total Expense: Rs ${expenseTotal.toFixed(2)}`, 14, doc.autoTable.previous.finalY + 30);
-    doc.text(`Available Amount: Rs ${(incomeTotal - expenseTotal).toFixed(2)}`, 14, doc.autoTable.previous.finalY + 40);
 
-      // Save the PDF
+    // Add section title
+    doc.setFontSize(14);
+    doc.setTextColor(41, 128, 185); // Blue color
+    doc.setFont(undefined, 'bold');
+    doc.text("Financial Summary", 14, finalY);
+    finalY += 10;
+    
+    // Add decorative line
+    doc.setDrawColor(200, 200, 200); // Light gray
+    doc.setLineWidth(0.5);
+    doc.line(14, finalY, doc.internal.pageSize.width - 14, finalY);
+    finalY += 10;
+    
+    // Reset text color and font
+    doc.setTextColor(0, 0, 0); // Black
+    doc.setFont(undefined, 'normal');
+    
+    // Add totals with improved formatting
+    doc.setFontSize(12);
+    
+    // Income row with green color
+    doc.setTextColor(0, 128, 0); // Green
+    doc.text("Total Income:", 14, finalY);
+    doc.text(`Rs ${incomeTotal.toFixed(2)}`, doc.internal.pageSize.width - 14, finalY, { align: "right" });
+    finalY += 8;
+    
+    // Expense row with red color
+    doc.setTextColor(255, 0, 0); // Red
+    doc.text("Total Expense:", 14, finalY);
+    doc.text(`Rs ${expenseTotal.toFixed(2)}`, doc.internal.pageSize.width - 14, finalY, { align: "right" });
+    finalY += 8;
+    
+    // Net amount with bold and blue color
+    doc.setTextColor(41, 128, 185); // Blue
+    doc.setFont(undefined, 'bold');
+    doc.text("Available Amount:", 14, finalY);
+    doc.text(`Rs ${(incomeTotal - expenseTotal).toFixed(2)}`, doc.internal.pageSize.width - 14, finalY, { align: "right" });
+    
+    // Add decorative box around totals
+    doc.setDrawColor(41, 128, 185); // Blue
+    doc.setLineWidth(0.3);
+    doc.rect(10, finalY - 25, doc.internal.pageSize.width - 20, 35);
+
+    // Save the PDF
       doc.save("your_transactions_report.pdf");
     }
   }
