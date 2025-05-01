@@ -427,7 +427,7 @@ function TransactionsTable({
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = "transactions.csv";
+    link.download = "your_transactions_report.csv";
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -440,7 +440,7 @@ function TransactionsTable({
       const reader = new FileReader();
       reader.onload = function(event) {
         try {
-          const logoWidth = 70;
+          const logoWidth = 80;
           const logoHeight = 20;
           doc.addImage(
             event.target.result,
@@ -496,17 +496,48 @@ function TransactionsTable({
         columnStyles: {
           1: { halign: "right" },
         },
-      });
 
-      // Add totals section
-      const finalY = doc.lastAutoTable.finalY || yPosition;
-      doc.setFontSize(10);
-      doc.text(`Total Income: Rs ${incomeTotal.toFixed(2)}`, 14, finalY + 20);
-      doc.text(`Total Expense: Rs ${expenseTotal.toFixed(2)}`, 14, finalY + 30);
-      doc.text(`Available Amount: Rs ${(incomeTotal - expenseTotal).toFixed(2)}`, 14, finalY + 40);
+      // Add these options for better multi-page handling
+      headStyles: {
+        fillColor: [41, 128, 185],
+        textColor: 255,
+        fontStyle: 'bold'
+      },
+      alternateRowStyles: {
+        fillColor: [245, 245, 245]
+      },
+      tableWidth: 'auto',
+      showHead: 'everyPage', // Show header on every page
+      pageBreak: 'auto', // Automatic page breaks
+      didDrawPage: function (data) {
+        // Footer with page numbers
+        const pageCount = doc.internal.getNumberOfPages();
+        doc.setFontSize(10);
+        doc.setTextColor(150);
+        doc.text(
+          'Page ' + doc.internal.getCurrentPageInfo().pageNumber + ' of ' + pageCount,
+          doc.internal.pageSize.width / 2,
+          doc.internal.pageSize.height - 10,
+          { align: 'center' }
+        );
+      }
+    });
+
+    // Add totals section on the last page
+    const finalY = doc.lastAutoTable.finalY || yPosition;
+    
+    // Check if we need a new page for totals
+    if (finalY > doc.internal.pageSize.height - 50) {
+      doc.addPage();
+    }
+    
+    doc.setFontSize(10);
+    doc.text(`Total Income: Rs ${incomeTotal.toFixed(2)}`, 14, doc.autoTable.previous.finalY + 20);
+    doc.text(`Total Expense: Rs ${expenseTotal.toFixed(2)}`, 14, doc.autoTable.previous.finalY + 30);
+    doc.text(`Available Amount: Rs ${(incomeTotal - expenseTotal).toFixed(2)}`, 14, doc.autoTable.previous.finalY + 40);
 
       // Save the PDF
-      doc.save("transactions.pdf");
+      doc.save("your_transactions_report.pdf");
     }
   }
   setIsExportModalVisible(false);
