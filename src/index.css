@@ -1,58 +1,100 @@
-@import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-:root{
-  --theme: #2970ff;
-  --black: #000;
-  --white: #fff;
-  --shadow: 0px 0px 30px 8px rgba(227, 227, 227, 0.75);
-}
-body {
-  margin: 0;
-  font-family: "Montserrat", sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222 47% 11%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+    --primary: 246 83% 60%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 220 14% 96%;
+    --secondary-foreground: 222 47% 11%;
+    --muted: 220 14% 96%;
+    --muted-foreground: 215 16% 47%;
+    --accent: 246 83% 97%;
+    --accent-foreground: 246 83% 40%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 246 83% 60%;
+    --radius: 0.75rem;
+    --income: 142 72% 29%;
+    --income-foreground: 0 0% 100%;
+    --expense: 0 84% 60%;
+    --expense-foreground: 0 0% 100%;
+  }
+
+  .dark {
+    --background: 222 47% 7%;
+    --foreground: 210 40% 98%;
+    --card: 222 47% 10%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222 47% 10%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 246 83% 65%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 217 32% 17%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217 32% 17%;
+    --muted-foreground: 215 20% 65%;
+    --accent: 217 32% 17%;
+    --accent-foreground: 246 83% 65%;
+    --destructive: 0 62% 55%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 217 32% 20%;
+    --input: 217 32% 20%;
+    --ring: 246 83% 65%;
+    --income: 142 70% 45%;
+    --income-foreground: 0 0% 100%;
+    --expense: 0 84% 65%;
+    --expense-foreground: 0 0% 100%;
+  }
 }
 
-input {
-  font-family: "Montserrat", sans-serif;
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
 }
 
-.custom-input {
-  border: 0px;
-  border-bottom: 1px solid #000;
-  padding: 0.5rem 0rem;
-  width: 100%;
-  border-radius: 0;
+/* Import Inter from Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+/* Smooth transitions for theme switching */
+html {
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-.custom-input {
-  margin-top: -1rem !important;
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  @apply bg-muted;
+}
+::-webkit-scrollbar-thumb {
+  @apply bg-muted-foreground/30 rounded-full;
+}
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-muted-foreground/50;
 }
 
-.custom-input::placeholder {
-  color: rgba(0, 0, 0, 0.5);
+/* React Toastify dark mode override */
+.dark .Toastify__toast {
+  background: hsl(var(--card));
+  color: hsl(var(--card-foreground));
+  border: 1px solid hsl(var(--border));
 }
-
-.custom-input:focus {
-  outline: none;
-  opacity: 1;
-  transition: all 0.3s;
-}
-
-.ant-picker-header {
-  justify-content: center !important;
-}
-
-.ant-picker-header > button {
-  width: fit-content !important;
-}
-
-.ant-picker-header-view {
-  display: flex !important; 
-  justify-content: center !important; 
-}
-
-.ant-picker-header-view > button {
-  width: fit-content !important;
-}
-

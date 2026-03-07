@@ -1,12 +1,21 @@
 import React, { useEffect, useState } from "react";
-import { Input, Button, Form, Modal } from "antd";
 import { auth, db } from "../../firebase";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { signOut } from "firebase/auth";
 import { toast } from "react-toastify";
 import { doc, updateDoc, getDoc } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
-import "./styles.css";
+import { LogOut, Save, Tag, Loader2 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "../ui/dialog";
+import { Button } from "../ui/button";
+import { Input } from "../ui/input";
+import { Label } from "../ui/label";
 
 function ProfileModal({ isVisible, handleCancel, expenseTags, setExpenseTags, incomeTags, setIncomeTags }) {
   const [user] = useAuthState(auth);
@@ -15,35 +24,31 @@ function ProfileModal({ isVisible, handleCancel, expenseTags, setExpenseTags, in
 
   useEffect(() => {
     if (user) {
-      fetchTags(); // Fetch tags when user is authenticated
+      fetchTags();
     }
-  }, [user]); // This effect will run when the user changes
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
 
   const fetchTags = async () => {
     setLoading(true);
     try {
       const docRef = doc(db, "users", user.uid);
       const docSnap = await getDoc(docRef);
-      
       if (docSnap.exists()) {
-        // Log the fetched data for debugging
-        console.log("Fetched user tags:", docSnap.data());
-
-        setExpenseTags(docSnap.data().expenseTags || []); // Set fetched tags or fallback to empty array
-        setIncomeTags(docSnap.data().incomeTags || []); // Set fetched tags or fallback to empty array
+        setExpenseTags(docSnap.data().expenseTags || []);
+        setIncomeTags(docSnap.data().incomeTags || []);
       } else {
-        console.log("No tags found for this user.");
-        setExpenseTags([]); // Fallback to empty array if no tags exist
-        setIncomeTags([]); // Fallback to empty array if no tags exist
+        setExpenseTags([]);
+        setIncomeTags([]);
       }
     } catch (error) {
-      console.error("Error fetching tags:", error);
       toast.error("Failed to load tags");
     }
     setLoading(false);
   };
 
   const saveTags = async () => {
+    setLoading(true);
     try {
       const userRef = doc(db, "users", user.uid);
       await updateDoc(userRef, {
@@ -53,9 +58,9 @@ function ProfileModal({ isVisible, handleCancel, expenseTags, setExpenseTags, in
       toast.success("Tags updated successfully!");
       handleCancel();
     } catch (error) {
-      console.error("Error saving tags:", error);
       toast.error("Failed to update tags");
     }
+    setLoading(false);
   };
 
   const logoutFunc = () => {
@@ -74,40 +79,107 @@ function ProfileModal({ isVisible, handleCancel, expenseTags, setExpenseTags, in
   };
 
   return (
-    <Modal
-      title="Manage Your Tags"
-      visible={isVisible}
-      onCancel={handleCancel}
-      footer={null}  
-    >
-      <div className="form-container">
-        <Form layout="vertical" onFinish={saveTags}>
-          <Form.Item label="Expense Tags">
+    <Dialog open={isVisible} onOpenChange={(open) => !open && handleCancel()}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Tag className="h-5 w-5 text-primary" />
+            Manage Your Tags
+          </DialogTitle>
+          <DialogDescription>
+            Add custom tags (comma-separated) for categorizing your transactions.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-5 py-2">
+          {/* Expense Tags */}
+          <div className="space-y-2">
+            <Label htmlFor="expense-tags" className="flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-rose-500 inline-block" />
+              Expense Tags
+            </Label>
             <Input
+              id="expense-tags"
               value={expenseTags?.join(", ")}
-              onChange={(e) => setExpenseTags(e.target.value.split(",").map(tag => tag.trim()))}
-              placeholder="Add expense tags (comma-separated)"
+              onChange={(e) =>
+                setExpenseTags(e.target.value.split(",").map((tag) => tag.trim()).filter(Boolean))
+              }
+              placeholder="Food, Transport, Bills, Shopping"
             />
-          </Form.Item>
+            {expenseTags?.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mt-2">
+                {expenseTags.map((tag) => (
+                  <span key={tag} className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-400 border border-rose-200 dark:border-rose-800">
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
 
-          <Form.Item label="Income Tags">
+          {/* Income Tags */}
+          <div className="space-y-2">
+            <Label htmlFor="income-tags" className="flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-emerald-500 inline-block" />
+              Income Tags
+            </Label>
             <Input
+              id="income-tags"
               value={incomeTags?.join(", ")}
-              onChange={(e) => setIncomeTags(e.target.value.split(",").map(tag => tag.trim()))}
-              placeholder="Add income tags (comma-separated)"
+              onChange={(e) =>
+                setIncomeTags(e.target.value.split(",").map((tag) => tag.trim()).filter(Boolean))
+              }
+              placeholder="Salary, Freelance, Investment, Gift"
             />
-          </Form.Item>
+            {incomeTags?.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mt-2">
+                {incomeTags.map((tag) => (
+                  <span key={tag} className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
 
-          <Button type="primary" htmlType="submit" loading={loading}>
+        {/* User Info */}
+        {user && (
+          <div className="flex items-center gap-3 p-3 rounded-lg bg-muted border border-border">
+            <img
+              src={user.photoURL || ""}
+              alt="User"
+              className="h-9 w-9 rounded-full object-cover border border-border"
+              onError={(e) => { e.target.style.display = "none"; }}
+            />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-foreground truncate">{user.displayName || "User"}</p>
+              <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Actions */}
+        <div className="flex gap-2 pt-2">
+          <Button
+            className="flex-1 gap-2"
+            onClick={saveTags}
+            disabled={loading}
+          >
+            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
             Save Tags
           </Button>
-        </Form>
-
-        <Button type="default" onClick={logoutFunc} style={{ marginTop: "1rem" }}>
-          Logout
-        </Button>
-      </div>
-    </Modal>
+          <Button
+            variant="outline"
+            className="gap-2 text-destructive border-destructive/30 hover:bg-destructive/10 hover:text-destructive"
+            onClick={logoutFunc}
+          >
+            <LogOut className="h-4 w-4" />
+            Logout
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 

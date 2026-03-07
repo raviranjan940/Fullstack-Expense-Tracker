@@ -1,112 +1,91 @@
 import React, { useRef, useState } from "react";
-import {
-  Table,
-  Radio,
-  DatePicker,
-  Modal,
-  Form,
-  Input,
-  Select,
-  InputNumber,
-  Tooltip,
-  Checkbox,
-  Upload,
-  message,
-  Divider,
-} from "antd";
-import {InboxOutlined} from "@ant-design/icons";
 import moment from "moment";
 import { parse, unparse } from "papaparse";
 import { toast } from "react-toastify";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
-import { EditOutlined, DeleteOutlined } from "@ant-design/icons"; // Import Ant Design Icons
-import "./styles.css";
-import Button from "../Button";
-import SearchImg from "../../assets/search.svg";
-
-const { Option } = Select;
-const {Dragger } = Upload;
+import {
+  Pencil, Trash2, Search, Upload, Download, FileText,
+  ArrowUpDown, CalendarRange, Tag, Filter, X, Loader2,
+} from "lucide-react";
+import { Button } from "../ui/button";
+import { Input } from "../ui/input";
+import { Label } from "../ui/label";
+import { Badge } from "../ui/badge";
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from "../ui/table";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "../ui/select";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
+} from "../ui/dialog";
+import {
+  AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle,
+  AlertDialogDescription, AlertDialogFooter,
+} from "../ui/alert-dialog";
 
 function TransactionsTable({
-  transactions,
-  addTransaction,
-  updateTransaction,
-  deleteTransaction, // Receive deleteTransaction as a prop
-  fetchTransactions,
-  incomeTags,
-  expenseTags,
+  transactions, addTransaction, updateTransaction, deleteTransaction,
+  fetchTransactions, incomeTags, expenseTags,
 }) {
-  // State Variables for Filtering, Sorting, and Searching
   const [search, setSearch] = useState("");
-  const [typeFilter, setTypeFilter] = useState("");
+  const [typeFilter, setTypeFilter] = useState("all");
   const [sortKey, setSortKey] = useState("");
-  const [selectedTag, setSelectedTag] = useState("");
-  const [startDate, setStartDate] = useState(null);
-  const [endDate, setEndDate] = useState(null);
+  const [selectedTag, setSelectedTag] = useState("all");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
 
-  // State Variables for Export Functionality
+  // Export states
   const [isExportModalVisible, setIsExportModalVisible] = useState(false);
   const [exportType, setExportType] = useState("all");
   const [exportFormat, setExportFormat] = useState("");
 
-  // State Variables for Edit Functionality
-  const [isEditModalVisible, setIsEditModalVisible] = useState(false);
-  const [editingTransaction, setEditingTransaction] = useState(null);
-  const [form] = Form.useForm();
-
-  // State Variables for Delete Confirmation Modal
-  const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
-  const [transactionToDelete, setTransactionToDelete] = useState(null);
-
-  // Add only these new state variables for logo handling
+  // Logo preference states
   const [isLogoPreferenceModalVisible, setIsLogoPreferenceModalVisible] = useState(false);
   const [includeLogo, setIncludeLogo] = useState(false);
   const [logoFile, setLogoFile] = useState(null);
   const [logoPreview, setLogoPreview] = useState(null);
 
-  const fileInput = useRef();
+  // Edit states
+  const [isEditModalVisible, setIsEditModalVisible] = useState(false);
+  const [editingTransaction, setEditingTransaction] = useState(null);
+  const [editName, setEditName] = useState("");
+  const [editAmount, setEditAmount] = useState("");
+  const [editDate, setEditDate] = useState("");
+  const [editTag, setEditTag] = useState("");
+  const [editType, setEditType] = useState("");
+  const [editLoading, setEditLoading] = useState(false);
 
-  // Function to Import Transactions from CSV
+  // Delete states
+  const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
+  const [transactionToDelete, setTransactionToDelete] = useState(null);
+
+
+
+  // CSV Import
   async function importFromCsv(event) {
     event.preventDefault();
     try {
       const file = event.target.files[0];
-      if (!file) {
-        toast.error("No file selected");
-        return;
-      }
-
+      if (!file) { toast.error("No file selected"); return; }
       parse(file, {
         header: true,
         skipEmptyLines: true,
         complete: async function (results) {
           for (const transaction of results.data) {
-            // Validate required fields
-            if (
-              transaction.Name &&
-              transaction.Type &&
-              transaction.Date &&
-              transaction.Tag &&
-              transaction.Amount
-            ) {
-              // Parse and validate the date
+            if (transaction.Name && transaction.Type && transaction.Date && transaction.Tag && transaction.Amount) {
               const parsedDate = moment(transaction.Date, ["DD-MM-YYYY", "YYYY-MM-DD"], true);
               if (!parsedDate.isValid()) {
-                toast.error(
-                  `Invalid date format for transaction "${transaction.Name}". Expected DD-MM-YYYY or YYYY-MM-DD.`
-                );
-                continue; // Skip this transaction
+                toast.error(`Invalid date for "${transaction.Name}". Expected DD-MM-YYYY.`);
+                continue;
               }
-
               const newTransaction = {
-                name: transaction.Name,
-                type: transaction.Type,
+                name: transaction.Name, type: transaction.Type,
                 date: parsedDate.format("DD-MM-YYYY"),
-                tag: transaction.Tag,
-                amount: parseFloat(transaction.Amount),
+                tag: transaction.Tag, amount: parseFloat(transaction.Amount),
               };
-              console.log("newTransaction", newTransaction);
               await addTransaction(newTransaction, true);
             }
           }
@@ -114,258 +93,110 @@ function TransactionsTable({
           await fetchTransactions();
           event.target.files = null;
         },
-        error: function (error) {
-          toast.error(`Error parsing CSV file: ${error.message}`);
-        },
+        error: (error) => toast.error(`Error parsing CSV: ${error.message}`),
       });
-    } catch (e) {
-      toast.error(e.message);
-    }
+    } catch (e) { toast.error(e.message); }
   }
 
-  // Define Table Columns with Action Column for Editing and Deleting
-  const columns = [
-    {
-      title: "Name",
-      dataIndex: "name",
-      key: "name",
-      sorter: (a, b) => a.name.localeCompare(b.name),
-      sortDirections: ["ascend", "descend"],
-    },
-    {
-      title: "Amount",
-      dataIndex: "amount",
-      key: "amount",
-      sorter: (a, b) => a.amount - b.amount,
-      sortDirections: ["ascend", "descend"],
-      render: (amount) => `Rs ${amount.toFixed(2)}`,
-    },
-    {
-      title: "Tag",
-      dataIndex: "tag",
-      key: "tag",
-      filters: [
-        ...incomeTags.map((tag) => ({ text: tag, value: tag })),
-        ...expenseTags.map((tag) => ({ text: tag, value: tag })),
-      ],
-      onFilter: (value, record) => record.tag === value,
-    },
-    {
-      title: "Type",
-      dataIndex: "type",
-      key: "type",
-      filters: [
-        { text: "Income", value: "income" },
-        { text: "Expense", value: "expense" },
-      ],
-      onFilter: (value, record) => record.type === value,
-      render: (type) =>
-        type.charAt(0).toUpperCase() + type.slice(1), // Capitalize first letter
-    },
-    {
-      title: "Date",
-      dataIndex: "date",
-      key: "date",
-      sorter: (a, b) => {
-        const dateA = moment(a.date, "DD-MM-YYYY").toDate();
-        const dateB = moment(b.date, "DD-MM-YYYY").toDate();
-        return dateA - dateB;
-      },
-      sortDirections: ["ascend", "descend"],
-    },
-    {
-      title: "Action",
-      key: "action",
-      render: (_, record) => (
-        <div style={{ display: "flex", gap: "15px", justifyContent: "center" }}>
-          {/* Edit Icon with Tooltip */}
-          <Tooltip title="Edit Transaction">
-            <EditOutlined
-              style={{ color: "#1890ff", cursor: "pointer", fontSize: "1.3em" }}
-              onClick={() => openEditModal(record)}
-            />
-          </Tooltip>
+  // Filter & Sort
+  const filteredTransactions = transactions.filter((t) => {
+    const searchMatch = search ? t.name.toLowerCase().includes(search.toLowerCase()) : true;
+    const tagMatch = selectedTag && selectedTag !== "all" ? t.tag === selectedTag : true;
+    const typeMatch = typeFilter && typeFilter !== "all" ? t.type === typeFilter : true;
+    const tDate = t.date ? moment(t.date, "DD-MM-YYYY").toDate() : new Date();
+    const startMatch = startDate ? tDate >= new Date(startDate) : true;
+    const endMatch = endDate ? tDate <= new Date(endDate + "T23:59:59") : true;
+    return searchMatch && tagMatch && typeMatch && startMatch && endMatch;
+  });
 
-          {/* Delete Icon with Tooltip */}
-          <Tooltip title="Delete Transaction">
-            <DeleteOutlined
-              style={{ color: "#ff4d4f", cursor: "pointer", fontSize: "1.3em" }}
-              onClick={() => openDeleteModal(record)}
-            />
-          </Tooltip>
-        </div>
-      ),
-    },
-  ];
+  let sortedTransactions = [...filteredTransactions].sort((a, b) => {
+    if (sortKey === "date") {
+      return moment(a.date, "DD-MM-YYYY").toDate() - moment(b.date, "DD-MM-YYYY").toDate();
+    } else if (sortKey === "amount") {
+      return a.amount - b.amount;
+    }
+    return 0;
+  });
 
-  // Function to Open the Edit Modal and Populate Form Fields
+  // Open Edit Modal
   const openEditModal = (transaction) => {
-    // Parse the transaction date with multiple formats and strict parsing
     const parsedDate = transaction.date
       ? moment(transaction.date, ["DD-MM-YYYY", "YYYY-MM-DD"], true)
       : null;
-
-    if (transaction.date && !parsedDate.isValid()) {
-      toast.error(
-        `Invalid date format for transaction "${transaction.name}". Expected DD-MM-YYYY or YYYY-MM-DD.`
-      );
-      return; // Do not open the modal if date is invalid
+    if (transaction.date && parsedDate && !parsedDate.isValid()) {
+      toast.error(`Invalid date for "${transaction.name}".`);
+      return;
     }
-
     setEditingTransaction(transaction);
+    setEditName(transaction.name);
+    setEditAmount(transaction.amount);
+    setEditDate(parsedDate ? parsedDate.format("YYYY-MM-DD") : "");
+    setEditTag(transaction.tag);
+    setEditType(transaction.type);
     setIsEditModalVisible(true);
-
-    form.setFieldsValue({
-      name: transaction.name,
-      amount: transaction.amount,
-      tag: transaction.tag,
-      type: transaction.type,
-      date: parsedDate ? parsedDate : null, // Set as moment object
-    });
   };
 
-  // Handle Edit Form Submission
   const handleEdit = async () => {
-    try {
-      const values = await form.validateFields();
-      const updatedTransaction = {
-        ...editingTransaction,
-        name: values.name,
-        amount: parseFloat(values.amount),
-        tag: values.tag,
-        type: values.type,
-        date: values.date
-          ? values.date.format("DD-MM-YYYY") // Ensure consistent formatting
-          : editingTransaction.date,
-      };
-      await updateTransaction(updatedTransaction);
-      toast.success("Transaction updated successfully");
-      setIsEditModalVisible(false);
-      setEditingTransaction(null);
-      form.resetFields();
-    } catch (errorInfo) {
-      console.log("Failed to update transaction:", errorInfo);
-      toast.error("Failed to update transaction. Please check the form fields.");
+    if (!editName || !editAmount || !editDate || !editTag || !editType) {
+      toast.error("Please fill all fields"); return;
     }
+    setEditLoading(true);
+    const updatedTransaction = {
+      ...editingTransaction,
+      name: editName,
+      amount: parseFloat(editAmount),
+      tag: editTag,
+      type: editType,
+      date: moment(editDate, "YYYY-MM-DD").format("DD-MM-YYYY"),
+    };
+    await updateTransaction(updatedTransaction);
+    setIsEditModalVisible(false);
+    setEditingTransaction(null);
+    setEditLoading(false);
   };
 
-  // Handle Cancelling the Edit
   const handleEditCancel = () => {
     setIsEditModalVisible(false);
     setEditingTransaction(null);
-    form.resetFields();
   };
 
-  // Function to Open the Delete Confirmation Modal
+  // Delete
   const openDeleteModal = (transaction) => {
     setTransactionToDelete(transaction);
     setIsDeleteModalVisible(true);
   };
 
-  // Handle Deletion Confirmation
   const handleDeleteConfirm = async () => {
     if (transactionToDelete) {
-      try {
-        await deleteTransaction(transactionToDelete.id);
-        toast.success("Transaction deleted successfully");
-      } catch (error) {
-        console.log("Failed to delete transaction:", error);
-        toast.error("Failed to delete transaction.");
-      }
+      await deleteTransaction(transactionToDelete.id);
       setIsDeleteModalVisible(false);
       setTransactionToDelete(null);
     }
   };
 
-  // Handle Deletion Cancellation
-  const handleDeleteCancel = () => {
-    setIsDeleteModalVisible(false);
-    setTransactionToDelete(null);
-  };
-
-  // Filter Transactions Based on Search and Filters
-  const filteredTransactions = transactions.filter((transaction) => {
-    const searchMatch = search
-      ? transaction.name.toLowerCase().includes(search.toLowerCase())
-      : true;
-    const tagMatch = selectedTag ? transaction.tag === selectedTag : true;
-    const typeMatch = typeFilter ? transaction.type === typeFilter : true;
-
-    const transactionDate = transaction.date
-      ? moment(transaction.date, "DD-MM-YYYY").toDate()
-      : new Date();
-
-    const startDateMatch = startDate ? transactionDate >= startDate : true;
-    const endDateMatch = endDate ? transactionDate <= endDate : true;
-
-    return searchMatch && tagMatch && typeMatch && startDateMatch && endDateMatch;
-  });
-
-  // Sort Transactions Based on Selected Sort Key
-  let sortedTransactions = [...filteredTransactions].sort((a, b) => {
-    if (sortKey === "date") {
-      const dateA = a.date
-        ? moment(a.date, "DD-MM-YYYY").toDate()
-        : new Date(0); // Default to epoch if date is invalid
-      const dateB = b.date
-        ? moment(b.date, "DD-MM-YYYY").toDate()
-        : new Date(0);
-      return dateA - dateB;
-    } else if (sortKey === "amount") {
-      return a.amount - b.amount;
-    } else {
-      return 0; // No sorting applied
-    }
-  });
-
-  // Prepare Data Source for the Table
-  const dataSource = sortedTransactions.map((transaction) => ({
-    key: transaction.id, // Unique key using transaction ID
-    ...transaction,
-  }));
-
-  console.log("dataSource", dataSource);
-
-  // Function to Show Export Modal
+  // Export
   function showExportModal(format) {
     setExportFormat(format);
-    if(format === "pdf") {
+    if (format === "pdf") {
       setIsLogoPreferenceModalVisible(true);
-    }else{
+    } else {
       setIsExportModalVisible(true);
     }
   }
 
-   // Add these new functions for logo handling
-   const handleLogoUpload = (info) => {
-    const { file } = info;
-    const isImage = file.type.startsWith('image/');
-    if (!isImage) {
-      message.error('You can only upload image files!');
-      return;
-    }
-
-    const isLt2M = file.size / 1024 / 1024 < 2;
-    if (!isLt2M) {
-      message.error('Image must smaller than 2MB!');
-      return;
-    }
-
+  const handleLogoUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) { toast.error("Please upload an image file"); return; }
+    if (file.size / 1024 / 1024 > 2) { toast.error("Image must be smaller than 2MB"); return; }
     setLogoFile(file);
-
-    //create preview
     const reader = new FileReader();
-    reader.onload = (event) => {
-      setLogoPreview(event.target.result);
-    };
+    reader.onload = (event) => setLogoPreview(event.target.result);
     reader.readAsDataURL(file);
   };
 
   const handleLogoPreferenceConfirm = () => {
-    if(includeLogo && !logoFile) {
-      message.error('Please upload a logo before proceeding.');
-      return;
-    }
+    if (includeLogo && !logoFile) { toast.error("Please upload a logo first"); return; }
     setIsLogoPreferenceModalVisible(false);
     setIsExportModalVisible(true);
   };
@@ -377,298 +208,214 @@ function TransactionsTable({
     setLogoPreview(null);
   };
 
-  const beforeLogoUpload = (file) => {
-    const isImage = file.type.startsWith('image/');
-    if (!isImage) {
-      message.error('You can only upload image files!');
-    }
-    const isLt2M = file.size / 1024 / 1024 < 2;
-    if (!isLt2M) {
-      message.error('Image must be smaller than 2MB!');
-    }
-    return isImage && isLt2M;
-  };
-
-  // Handle Export Functionality (CSV & PDF)
   function handleExport() {
     const filteredData =
-    exportType === "all"
-      ? sortedTransactions
-      : sortedTransactions.filter(
-          (transaction) => transaction.type === exportType
-        );
+      exportType === "all"
+        ? sortedTransactions
+        : sortedTransactions.filter((t) => t.type === exportType);
 
-  // Calculate totals
-  const incomeTotal = filteredData
-    .filter(t => t.type === 'income')
-    .reduce((sum, t) => sum + t.amount, 0);
-  
-  const expenseTotal = filteredData
-    .filter(t => t.type === 'expense')
-    .reduce((sum, t) => sum + t.amount, 0);
+    const incomeTotal = filteredData.filter((t) => t.type === "income").reduce((s, t) => s + t.amount, 0);
+    const expenseTotal = filteredData.filter((t) => t.type === "expense").reduce((s, t) => s + t.amount, 0);
 
-  if (exportFormat === "csv") {
-    // [Keep existing CSV export code exactly as it was]
-    const csvData = [
-      ...filteredData.map(({ name, type, date, tag, amount }) => [
-        name,
-        type,
-        date,
-        tag,
-        amount,
-      ]),
-    ];
+    if (exportFormat === "csv") {
+      const csvData = filteredData.map(({ name, type, date, tag, amount }) => [name, type, date, tag, amount]);
+      const csv = unparse({ fields: ["Name", "Type", "Date", "Tag", "Amount"], data: csvData });
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url; link.download = "your_transactions_report.csv";
+      document.body.appendChild(link); link.click(); document.body.removeChild(link);
+    } else if (exportFormat === "pdf") {
+      const doc = new jsPDF();
+      let yPosition = 20;
 
-    const csv = unparse({
-      fields: ["Name", "Type", "Date", "Tag", "Amount"],
-      data: csvData,
-    });
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "your_transactions_report.csv";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  } else if (exportFormat === "pdf") {
-    const doc = new jsPDF();
-    let yPosition = 20;
-
-    // Add logo if selected with fixed size
-    if (includeLogo && logoFile) {
-      const reader = new FileReader();
-      reader.onload = function(event) {
-        try {
-          const logoWidth = 80;
-          const logoHeight = 20;
-          doc.addImage(
-            event.target.result,
-            'JPEG',
-            (doc.internal.pageSize.width - logoWidth) / 2,
-            15,
-            logoWidth,
-            logoHeight
-          );
-          yPosition = 15 + logoHeight + 10;
-          addPdfContent();
-        } catch (error) {
-          console.log("Failed to add logo:", error);
-          addPdfContent();
-        }
+      const addPdfContent = () => {
+        doc.setFontSize(18);
+        doc.text("Transactions Report", doc.internal.pageSize.width / 2, yPosition, { align: "center" });
+        yPosition += 10;
+        const tableColumn = ["Name", "Amount", "Tag", "Type", "Date"];
+        const tableRows = filteredData.map((t) => [
+          t.name, `Rs ${t.amount.toFixed(2)}`, t.tag,
+          t.type.charAt(0).toUpperCase() + t.type.slice(1), t.date,
+        ]);
+        doc.autoTable({
+          startY: yPosition, head: [tableColumn], body: tableRows,
+          margin: { top: 10 }, theme: "striped", styles: { fontSize: 10 },
+          columnStyles: { 1: { halign: "right" } },
+          headStyles: { fillColor: [99, 102, 241], textColor: 255, fontStyle: "bold" },
+          alternateRowStyles: { fillColor: [245, 245, 245] },
+          tableWidth: "auto", showHead: "everyPage", pageBreak: "auto",
+          didDrawPage: (data) => {
+            const pageCount = doc.internal.getNumberOfPages();
+            doc.setFontSize(10); doc.setTextColor(150);
+            doc.text(
+              "Page " + doc.internal.getCurrentPageInfo().pageNumber + " of " + pageCount,
+              doc.internal.pageSize.width / 2, doc.internal.pageSize.height - 10, { align: "center" }
+            );
+          },
+        });
+        let finalY = (doc.lastAutoTable?.finalY || yPosition) + 20;
+        if (finalY > doc.internal.pageSize.height - 60) { doc.addPage(); finalY = 20; }
+        doc.setFontSize(14); doc.setTextColor(99, 102, 241); doc.setFont(undefined, "bold");
+        doc.text("Financial Summary", 14, finalY); finalY += 10;
+        doc.setDrawColor(200, 200, 200); doc.setLineWidth(0.5);
+        doc.line(14, finalY, doc.internal.pageSize.width - 14, finalY); finalY += 10;
+        doc.setTextColor(0, 0, 0); doc.setFont(undefined, "normal"); doc.setFontSize(12);
+        doc.setTextColor(0, 128, 0); doc.text("Total Income:", 14, finalY);
+        doc.text(`Rs ${incomeTotal.toFixed(2)}`, doc.internal.pageSize.width - 14, finalY, { align: "right" }); finalY += 8;
+        doc.setTextColor(255, 0, 0); doc.text("Total Expense:", 14, finalY);
+        doc.text(`Rs ${expenseTotal.toFixed(2)}`, doc.internal.pageSize.width - 14, finalY, { align: "right" }); finalY += 8;
+        doc.setTextColor(99, 102, 241); doc.setFont(undefined, "bold");
+        doc.text("Available Amount:", 14, finalY);
+        doc.text(`Rs ${(incomeTotal - expenseTotal).toFixed(2)}`, doc.internal.pageSize.width - 14, finalY, { align: "right" });
+        doc.setDrawColor(99, 102, 241); doc.setLineWidth(0.3);
+        doc.rect(10, finalY - 25, doc.internal.pageSize.width - 20, 35);
+        doc.save("your_transactions_report.pdf");
       };
-      reader.readAsDataURL(logoFile);
-    } else {
-      addPdfContent();
-    }
-    
-    function addPdfContent() {
-      // Add title
-      doc.setFontSize(18);
-      doc.text("Transactions Report", doc.internal.pageSize.width / 2, yPosition, {
-        align: "center",
-      });
-      yPosition += 10;
 
-      // Prepare table data (keeping original table structure)
-      const tableColumn = columns
-        .filter(col => col.key !== 'action')
-        .map(col => col.title);
-      
-      const tableRows = filteredData.map(transaction => [
-        transaction.name,
-        `Rs ${transaction.amount.toFixed(2)}`,
-        transaction.tag,
-        transaction.type.charAt(0).toUpperCase() + transaction.type.slice(1),
-        transaction.date,
-      ]);
-
-      // Generate Table in PDF (keeping original structure)
-      doc.autoTable({
-        startY: yPosition,
-        head: [tableColumn],
-        body: tableRows,
-        margin: { top: 10 },
-        theme: "striped",
-        styles: {
-          fontSize: 10,
-        },
-        columnStyles: {
-          1: { halign: "right" },
-        },
-
-      // Add these options for better multi-page handling
-      headStyles: {
-        fillColor: [41, 128, 185],
-        textColor: 255,
-        fontStyle: 'bold'
-      },
-      alternateRowStyles: {
-        fillColor: [245, 245, 245]
-      },
-      tableWidth: 'auto',
-      showHead: 'everyPage', // Show header on every page
-      pageBreak: 'auto', // Automatic page breaks
-      didDrawPage: function (data) {
-        // Footer with page numbers
-        const pageCount = doc.internal.getNumberOfPages();
-        doc.setFontSize(10);
-        doc.setTextColor(150);
-        doc.text(
-          'Page ' + doc.internal.getCurrentPageInfo().pageNumber + ' of ' + pageCount,
-          doc.internal.pageSize.width / 2,
-          doc.internal.pageSize.height - 10,
-          { align: 'center' }
-        );
+      if (includeLogo && logoFile) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          try {
+            doc.addImage(event.target.result, "JPEG", (doc.internal.pageSize.width - 80) / 2, 15, 80, 20);
+            yPosition = 45;
+          } catch (e) { console.log("Logo error:", e); }
+          addPdfContent();
+        };
+        reader.readAsDataURL(logoFile);
+      } else {
+        addPdfContent();
       }
-    });
-
-    // Add totals section on the last page
-    let finalY = doc.lastAutoTable.finalY || yPosition;
-
-    // Add space before totals section (20 units)
-    finalY += 20;
-    
-    // Check if we need a new page for totals
-    if (finalY > doc.internal.pageSize.height - 60) {
-      doc.addPage();
-      finalY = 20;
     }
-
-    // Add section title
-    doc.setFontSize(14);
-    doc.setTextColor(41, 128, 185); // Blue color
-    doc.setFont(undefined, 'bold');
-    doc.text("Financial Summary", 14, finalY);
-    finalY += 10;
-    
-    // Add decorative line
-    doc.setDrawColor(200, 200, 200); // Light gray
-    doc.setLineWidth(0.5);
-    doc.line(14, finalY, doc.internal.pageSize.width - 14, finalY);
-    finalY += 10;
-    
-    // Reset text color and font
-    doc.setTextColor(0, 0, 0); // Black
-    doc.setFont(undefined, 'normal');
-    
-    // Add totals with improved formatting
-    doc.setFontSize(12);
-    
-    // Income row with green color
-    doc.setTextColor(0, 128, 0); // Green
-    doc.text("Total Income:", 14, finalY);
-    doc.text(`Rs ${incomeTotal.toFixed(2)}`, doc.internal.pageSize.width - 14, finalY, { align: "right" });
-    finalY += 8;
-    
-    // Expense row with red color
-    doc.setTextColor(255, 0, 0); // Red
-    doc.text("Total Expense:", 14, finalY);
-    doc.text(`Rs ${expenseTotal.toFixed(2)}`, doc.internal.pageSize.width - 14, finalY, { align: "right" });
-    finalY += 8;
-    
-    // Net amount with bold and blue color
-    doc.setTextColor(41, 128, 185); // Blue
-    doc.setFont(undefined, 'bold');
-    doc.text("Available Amount:", 14, finalY);
-    doc.text(`Rs ${(incomeTotal - expenseTotal).toFixed(2)}`, doc.internal.pageSize.width - 14, finalY, { align: "right" });
-    
-    // Add decorative box around totals
-    doc.setDrawColor(41, 128, 185); // Blue
-    doc.setLineWidth(0.3);
-    doc.rect(10, finalY - 25, doc.internal.pageSize.width - 20, 35);
-
-    // Save the PDF
-      doc.save("your_transactions_report.pdf");
-    }
+    setIsExportModalVisible(false);
   }
-  setIsExportModalVisible(false);
-}
+
+  const allTags = [...new Set([...incomeTags, ...expenseTags])];
 
   return (
-    <div className="main-container">
-      {/* Search and Filter Section */}
-      <div className="search-container">
-        <div className="input-flex">
-          <img src={SearchImg} width="16" alt="Search" />
-          <input
-            value={search}
-            placeholder="Search by Name"
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        </div>
-        <select
-          className="select-input"
-          onChange={(e) => setSelectedTag(e.target.value)}
-          value={selectedTag}
-          placeholder="Filter"
-        >
-          <option value="">All</option>
-          {incomeTags.map((tag) => (
-            <option key={`income-tag-${tag}`} value={tag}>
-              {tag}
-            </option>
-          ))}
-          {expenseTags.map((tag) => (
-            <option key={`expense-tag-${tag}`} value={tag}>
-              {tag}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      {/* Transactions Table Section */}
-      <div className="my-table">
-        <div className="tab-grp-wrapper">
-          <h2>My Transactions</h2>
-
-          {/* Sort Options */}
-          <Radio.Group
-            className="input-radio"
-            onChange={(e) => setSortKey(e.target.value)}
-            value={sortKey}
-          >
-            <Radio.Button value="">No Sort</Radio.Button>
-            <Radio.Button value="date">Sort by Date</Radio.Button>
-            <Radio.Button value="amount">Sort by Amount</Radio.Button>
-          </Radio.Group>
-
-          {/* Date Range Pickers */}
-          <div className="btn-container">
-            <DatePicker
-              className="start-end-date"
-              placeholder="Start Date"
-              format="DD-MM-YYYY"
-              onChange={(date) => {
-                setStartDate(date ? date.startOf("day").toDate() : null);
-                console.log("Start Date Selected:", date);
-              }}
-              allowClear
-            />
-            <DatePicker
-              className="start-end-date"
-              placeholder="End Date"
-              format="DD-MM-YYYY"
-              onChange={(date) => {
-                setEndDate(date ? date.endOf("day").toDate() : null);
-                console.log("End Date Selected:", date);
-              }}
-              allowClear
-            />
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
+      {/* Main Table Card */}
+      <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
+        {/* Table Header / Controls */}
+        <div className="p-4 sm:p-6 border-b border-border space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-bold text-foreground">My Transactions</h2>
+            <span className="text-sm text-muted-foreground">
+              {sortedTransactions.length} transactions
+            </span>
           </div>
 
-          {/* Export and Import Buttons */}
-          <div className="btn-container">
-            <Button
-              text={"Export to CSV"}
-              onClick={() => showExportModal("csv")}
-            />
-            <Button
-              text={"Export to PDF"}
-              onClick={() => showExportModal("pdf")}
-            />
-            <label htmlFor="file-csv" className="btn btn-blue">
-              Import from CSV
+          {/* Search & Tag Filter Row */}
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+              <Input
+                value={search}
+                placeholder="Search by name..."
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            <Select value={selectedTag} onValueChange={setSelectedTag}>
+              <SelectTrigger className="w-full sm:w-40">
+                <Tag className="h-4 w-4 mr-1 text-muted-foreground" />
+                <SelectValue placeholder="Filter by tag" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Tags</SelectItem>
+                {allTags.map((tag) => (
+                  <SelectItem key={tag} value={tag}>{tag}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={typeFilter} onValueChange={setTypeFilter}>
+              <SelectTrigger className="w-full sm:w-40">
+                <Filter className="h-4 w-4 mr-1 text-muted-foreground" />
+                <SelectValue placeholder="Filter by type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Types</SelectItem>
+                <SelectItem value="income">Income</SelectItem>
+                <SelectItem value="expense">Expense</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Sort & Date Range Row */}
+          <div className="flex flex-col sm:flex-row gap-3 flex-wrap">
+            {/* Sort Buttons */}
+            <div className="flex gap-1.5 rounded-lg border border-border bg-muted/40 p-1">
+              {[
+                { key: "", label: "No Sort" },
+                { key: "date", label: "By Date" },
+                { key: "amount", label: "By Amount" },
+              ].map(({ key, label }) => (
+                <button
+                  key={key}
+                  onClick={() => setSortKey(key)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                    sortKey === key
+                      ? "bg-background text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground hover:bg-background/60"
+                  }`}
+                >
+                  <ArrowUpDown className="h-3 w-3" />
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            {/* Date Range */}
+            <div className="flex gap-2 flex-1">
+              <div className="relative flex-1">
+                <CalendarRange className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                <Input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="pl-10 text-sm"
+                  placeholder="Start Date"
+                />
+              </div>
+              <div className="relative flex-1">
+                <CalendarRange className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                <Input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className="pl-10 text-sm"
+                  placeholder="End Date"
+                />
+              </div>
+              {(startDate || endDate) && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => { setStartDate(""); setEndDate(""); }}
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+          </div>
+
+          {/* Export & Import Buttons */}
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" size="sm" onClick={() => showExportModal("csv")} className="gap-2">
+              <FileText className="h-4 w-4" />
+              Export CSV
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => showExportModal("pdf")} className="gap-2">
+              <Download className="h-4 w-4" />
+              Export PDF
+            </Button>
+            <label
+              htmlFor="file-csv"
+              className="inline-flex items-center gap-2 h-9 px-3 rounded-md border border-input bg-background text-sm font-medium text-foreground hover:bg-accent hover:text-accent-foreground cursor-pointer transition-colors"
+            >
+              <Upload className="h-4 w-4" />
+              Import CSV
             </label>
             <input
               onChange={importFromCsv}
@@ -681,247 +428,231 @@ function TransactionsTable({
           </div>
         </div>
 
-        {/* Transactions Table */}
-        <Table
-          className="table-mod"
-          columns={columns}
-          dataSource={dataSource}
-          rowKey={(record) => record.id} // Unique key for each row
-          pagination={{ pageSize: 10 }}
-          bordered
-          scroll={{ x: "max-content" }}
-        />
+        {/* Table */}
+        {sortedTransactions.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-20 gap-3 text-muted-foreground">
+            <FileText className="h-12 w-12 opacity-20" />
+            <p className="text-sm font-medium">No transactions found</p>
+            <p className="text-xs">Try adjusting your filters or add a new transaction</p>
+          </div>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow className="hover:bg-transparent">
+                <TableHead>Name</TableHead>
+                <TableHead>Amount</TableHead>
+                <TableHead>Tag</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead>Date</TableHead>
+                <TableHead className="text-center">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {sortedTransactions.map((transaction) => (
+                <TableRow key={transaction.id} className="group">
+                  <TableCell className="font-medium text-foreground">{transaction.name}</TableCell>
+                  <TableCell className={transaction.type === "income" ? "text-emerald-600 dark:text-emerald-400 font-semibold" : "text-rose-600 dark:text-rose-400 font-semibold"}>
+                    {transaction.type === "income" ? "+" : "-"}₹{transaction.amount.toFixed(2)}
+                  </TableCell>
+                  <TableCell>
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-secondary text-secondary-foreground">
+                      {transaction.tag}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={transaction.type === "income" ? "income" : "expense"}>
+                      {transaction.type.charAt(0).toUpperCase() + transaction.type.slice(1)}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-muted-foreground text-sm">{transaction.date}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center justify-center gap-2">
+                      <button
+                        onClick={() => openEditModal(transaction)}
+                        title="Edit Transaction"
+                        className="p-1.5 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => openDeleteModal(transaction)}
+                        title="Delete Transaction"
+                        className="p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
       </div>
 
-      {/* Add this new modal for logo preferences */}
-      <Modal
-        title="PDF Export Options"
-        visible={isLogoPreferenceModalVisible}
-        onOk={handleLogoPreferenceConfirm}
-        onCancel={handleLogoPreferenceCancel}
-        okText="Continue to Export"
-        cancelText="Cancel"
-        width={500}
-      >
-        <Form layout="vertical">
-          <Form.Item>
-            <Checkbox
-              checked={includeLogo}
-              onChange={(e) => setIncludeLogo(e.target.checked)}
-            >
-              Include logo in PDF (70x20px)
-            </Checkbox>
-          </Form.Item>
-          
-          {includeLogo && (
-            <>
-            <Divider>Upload Your Logo</Divider>
-            <Form.Item
-              label="Upload Logo (Max 2MB)"
-              extra="Recommended size: 70x20px for best results"
-            >
-              <Dragger
-                name="logo"
-                multiple={false}
-                accept="image/*"
-                beforeUpload={beforeLogoUpload}
-                customRequest={({ file, onSuccess }) => {
-                  setTimeout(() => {
-                    onSuccess("ok");
-                    handleLogoUpload({ file });
-                  }, 0);
-                }}
-                showUploadList={false}
-              >
-                <p className="ant-upload-drag-icon">
-                  <InboxOutlined />
-                </p>
-                <p className="ant-upload-text">
-                  Click or drag file to this area to upload
-                </p>
-                <p className="ant-upload-hint">
-                  Supports JPG, PNG formats
-                </p>
-              </Dragger>
-            </Form.Item>
-            
-            {logoPreview && (
-              <Form.Item label="Logo Preview">
-                <div style={{
-                  display: 'flex',
-                  justifyContent: 'center',
-                  border: '1px dashed #d9d9d9',
-                  padding: '10px',
-                  borderRadius: '4px'
-                }}>
-                  <img 
-                    src={logoPreview} 
-                    alt="Logo Preview" 
-                    style={{ 
-                      maxWidth: '200px', 
-                      maxHeight: '100px',
-                      objectFit: 'contain'
-                    }} 
-                  />
-                </div>
-              </Form.Item>
+      {/* ─── Edit Dialog ─── */}
+      <Dialog open={isEditModalVisible} onOpenChange={(open) => !open && handleEditCancel()}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Pencil className="h-5 w-5 text-primary" /> Edit Transaction
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label htmlFor="edit-name">Name</Label>
+              <Input id="edit-name" value={editName} onChange={(e) => setEditName(e.target.value)} placeholder="Transaction name" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-amount">Amount (₹)</Label>
+              <Input id="edit-amount" type="number" min="0" step="0.01" value={editAmount} onChange={(e) => setEditAmount(e.target.value)} placeholder="0.00" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-date">Date</Label>
+              <Input id="edit-date" type="date" value={editDate} onChange={(e) => setEditDate(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label>Tag</Label>
+              <Select value={editTag} onValueChange={setEditTag}>
+                <SelectTrigger><SelectValue placeholder="Select tag" /></SelectTrigger>
+                <SelectContent>
+                  {incomeTags.map((tag) => <SelectItem key={`i-${tag}`} value={tag}>{tag}</SelectItem>)}
+                  {expenseTags.map((tag) => <SelectItem key={`e-${tag}`} value={tag}>{tag}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Type</Label>
+              <Select value={editType} onValueChange={setEditType}>
+                <SelectTrigger><SelectValue placeholder="Select type" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="income">Income</SelectItem>
+                  <SelectItem value="expense">Expense</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={handleEditCancel}>Cancel</Button>
+            <Button onClick={handleEdit} disabled={editLoading} className="gap-2">
+              {editLoading && <Loader2 className="h-4 w-4 animate-spin" />} Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ─── Delete Confirmation ─── */}
+      <AlertDialog open={isDeleteModalVisible} onOpenChange={(open) => !open && setIsDeleteModalVisible(false)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+              <Trash2 className="h-5 w-5" /> Confirm Deletion
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete{" "}
+              <strong className="text-foreground">"{transactionToDelete?.name}"</strong>?
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <Button variant="outline" onClick={() => setIsDeleteModalVisible(false)}>Cancel</Button>
+            <Button variant="destructive" onClick={handleDeleteConfirm} className="gap-2">
+              <Trash2 className="h-4 w-4" /> Delete
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* ─── Logo Preference Modal (PDF) ─── */}
+      <Dialog open={isLogoPreferenceModalVisible} onOpenChange={(open) => !open && handleLogoPreferenceCancel()}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Download className="h-5 w-5 text-primary" /> PDF Export Options
+            </DialogTitle>
+            <DialogDescription>Configure your PDF report before exporting.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <label className="flex items-center gap-3 p-3 rounded-lg border border-border bg-muted/40 cursor-pointer hover:bg-muted/70 transition-colors">
+              <input
+                type="checkbox"
+                checked={includeLogo}
+                onChange={(e) => setIncludeLogo(e.target.checked)}
+                className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
+              />
+              <span className="text-sm font-medium text-foreground">Include logo in PDF</span>
+            </label>
+
+            {includeLogo && (
+              <div className="space-y-3">
+                <Label htmlFor="logo-upload">Upload Logo (max 2MB)</Label>
+                <label
+                  htmlFor="logo-upload"
+                  className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-border rounded-lg cursor-pointer hover:bg-muted/40 transition-colors"
+                >
+                  <Upload className="h-6 w-6 text-muted-foreground mb-1" />
+                  <span className="text-xs text-muted-foreground">Click to upload (JPG, PNG)</span>
+                  <input id="logo-upload" type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} />
+                </label>
+                {logoPreview && (
+                  <div className="flex justify-center p-3 border border-dashed border-border rounded-lg">
+                    <img src={logoPreview} alt="Logo preview" className="max-w-full max-h-16 object-contain" />
+                  </div>
+                )}
+              </div>
             )}
-          </>
-          )}
-        </Form>
-      </Modal>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={handleLogoPreferenceCancel}>Cancel</Button>
+            <Button onClick={handleLogoPreferenceConfirm} className="gap-2">
+              <FileText className="h-4 w-4" /> Continue to Export
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-      {/* Export Modal */}
-      <Modal
-        title="Export Transactions"
-        visible={isExportModalVisible}
-        onOk={handleExport}
-        onCancel={() => setIsExportModalVisible(false)}
-        okText="Export"
-      >
-        <p>Select the type of transactions to export:</p>
-        <Radio.Group
-          onChange={(e) => setExportType(e.target.value)}
-          value={exportType}
-          style={{marginBottom: 16}}
-        >
-          <Radio value="all">All Transactions</Radio>
-          <Radio value="income">Income Only</Radio>
-          <Radio value="expense">Expense Only</Radio>
-        </Radio.Group>
-      </Modal>
-
-      {/* Edit Transaction Modal */}
-      <Modal
-        title="Edit Transaction"
-        visible={isEditModalVisible}
-        onOk={handleEdit}
-        onCancel={handleEditCancel}
-        okText="Save"
-      >
-        <Form
-          form={form}
-          layout="vertical"
-          name="edit_transaction_form"
-        >
-          {/* Transaction Name */}
-          <Form.Item
-            name="name"
-            label="Name"
-            rules={[
-              { required: true, message: "Please enter the transaction name" },
-            ]}
-          >
-            <Input placeholder="Enter transaction name" />
-          </Form.Item>
-
-          {/* Transaction Amount */}
-          <Form.Item
-            name="amount"
-            label="Amount"
-            rules={[
-              { required: true, message: "Please enter the amount" },
-              {
-                type: "number",
-                min: 0,
-                message: "Amount must be a positive number",
-              },
-            ]}
-          >
-            <InputNumber
-              style={{ width: "100%" }}
-              min={0}
-              formatter={(value) =>
-                `Rs ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
-              }
-              parser={(value) => value.replace(/Rs\s?|(,*)/g, "")}
-              placeholder="Enter amount"
-            />
-          </Form.Item>
-
-          {/* Transaction Tag */}
-          <Form.Item
-            name="tag"
-            label="Tag"
-            rules={[
-              { required: true, message: "Please select a tag" },
-            ]}
-          >
-            <Select placeholder="Select a tag">
-              {incomeTags.map((tag) => (
-                <Option key={`income-select-${tag}`} value={tag}>
-                  {tag}
-                </Option>
-              ))}
-              {expenseTags.map((tag) => (
-                <Option key={`expense-select-${tag}`} value={tag}>
-                  {tag}
-                </Option>
-              ))}
-            </Select>
-          </Form.Item>
-
-          {/* Transaction Type */}
-          <Form.Item
-            name="type"
-            label="Type"
-            rules={[
-              { required: true, message: "Please select the type" },
-            ]}
-          >
-            <Select placeholder="Select type">
-              <Option value="income">Income</Option>
-              <Option value="expense">Expense</Option>
-            </Select>
-          </Form.Item>
-
-          {/* Transaction Date */}
-          <Form.Item
-            name="date"
-            label="Date"
-            rules={[
-              { required: true, message: "Please select the date" },
-              {
-                validator: (_, value) => {
-                  if (!value) {
-                    return Promise.reject("Please select the date");
-                  }
-                  if (!moment(value, "DD-MM-YYYY", true).isValid()) {
-                    return Promise.reject("Date must be in DD-MM-YYYY format");
-                  }
-                  return Promise.resolve();
-                },
-              },
-            ]}
-          >
-            <DatePicker
-              format="DD-MM-YYYY"
-              style={{ width: "100%" }}
-              onChange={(date, dateString) => {
-                // Optional: Handle any additional logic on date change
-                console.log("Selected Date in Edit Modal:", date, dateString);
-              }}
-              allowClear={false}
-              placeholder="Select date"
-            />
-          </Form.Item>
-        </Form>
-      </Modal>
-
-      {/* Delete Confirmation Modal */}
-      <Modal
-        title="Confirm Deletion"
-        visible={isDeleteModalVisible}
-        onOk={handleDeleteConfirm}
-        onCancel={handleDeleteCancel}
-        okText="Delete"
-        okButtonProps={{ danger: true }}
-      >
-        <p>
-          Are you sure you want to delete the transaction "
-          <strong>{transactionToDelete?.name}</strong>"?
-        </p>
-      </Modal>
+      {/* ─── Export Type Modal ─── */}
+      <Dialog open={isExportModalVisible} onOpenChange={(open) => !open && setIsExportModalVisible(false)}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {exportFormat === "csv" ? <FileText className="h-5 w-5 text-primary" /> : <Download className="h-5 w-5 text-primary" />}
+              Export {exportFormat?.toUpperCase()}
+            </DialogTitle>
+            <DialogDescription>Select which transactions to include in the export.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 py-2">
+            {[
+              { value: "all", label: "All Transactions" },
+              { value: "income", label: "Income Only" },
+              { value: "expense", label: "Expense Only" },
+            ].map(({ value, label }) => (
+              <label
+                key={value}
+                className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+                  exportType === value ? "border-primary bg-accent" : "border-border hover:bg-muted/40"
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="exportType"
+                  value={value}
+                  checked={exportType === value}
+                  onChange={(e) => setExportType(e.target.value)}
+                  className="text-primary focus:ring-primary"
+                />
+                <span className="text-sm font-medium text-foreground">{label}</span>
+              </label>
+            ))}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsExportModalVisible(false)}>Cancel</Button>
+            <Button onClick={handleExport} className="gap-2">
+              <Download className="h-4 w-4" /> Export
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

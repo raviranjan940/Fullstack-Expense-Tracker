@@ -1,84 +1,118 @@
-import React from 'react';
-import { Button, Modal, Form, Input, DatePicker, Select } from 'antd';
+import React, { useState, useRef } from "react";
+import moment from "moment";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../ui/dialog";
+import { Button } from "../ui/button";
+import { Input } from "../ui/input";
+import { Label } from "../ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+import { PlusCircle, Loader2 } from "lucide-react";
 
-function AddIncomeModal({isIncomeModalVisible, handleIncomeCancel, onFinish, incomeTags}) {
-    const [form] = Form.useForm();
+function AddIncomeModal({ isIncomeModalVisible, handleIncomeCancel, onFinish, incomeTags }) {
+  const [name, setName] = useState("");
+  const [amount, setAmount] = useState("");
+  const [date, setDate] = useState("");
+  const [tag, setTag] = useState("");
+  const [loading, setLoading] = useState(false);
+  const formRef = useRef(null);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!name || !amount || !date || !tag) return;
+    setLoading(true);
+    const momentDate = moment(date, "YYYY-MM-DD");
+    const values = { name, amount, date: momentDate, tag };
+    onFinish(values, "income");
+    setName(""); setAmount(""); setDate(""); setTag("");
+    setLoading(false);
+    handleIncomeCancel();
+  };
+
+  const handleClose = () => {
+    setName(""); setAmount(""); setDate(""); setTag("");
+    handleIncomeCancel();
+  };
+
   return (
-    <Modal
-      style={{ fontWeight: 600 }}
-      title="Add Income"
-      visible={isIncomeModalVisible}
-      onCancel={handleIncomeCancel}
-      footer={null}
-    >
-      <Form
-        form={form}
-        layout="vertical"
-        onFinish={(values) => {
-          onFinish(values, "income");
-          form.resetFields();
-          handleIncomeCancel();
-        }}
-      >
-        <Form.Item
-          style={{ fontWeight: 600 }}
-          label="Name"
-          name="name"
-          rules={[
-            {
-              required: true,
-              message: "Please input the name of the transaction!",
-            },
-          ]}
-        >
-          <Input type="text" className="custom-input" />
-        </Form.Item>
-        <Form.Item
-          style={{ fontWeight: 600 }}
-          label="Amount"
-          name="amount"
-          rules={[
-            { required: true, message: "Please input the income amount!" },
-          ]}
-        >
-          <Input type="number" className="custom-input" />
-        </Form.Item>
-        <Form.Item
-          style={{ fontWeight: 600 }}
-          label="Date"
-          name="date"
-          rules={[
-            { required: true, message: "Please select the income date!" },
-          ]}
-        >
-          <DatePicker 
-            inputReadOnly 
-            format="DD-MM-YYYY" 
-            className="custom-input" 
-          />
-        </Form.Item>
-        <Form.Item
-          style={{ fontWeight: 600 }}
-          label="Tag"
-          name="tag"
-          rules={[{ required: true, message: "Please select a tag!" }]}
-        >
-          <Select className="select-input-2">
-          {incomeTags.map((tag, index) => (
-              <Select.Option key={index} value={tag}>
-                {tag}
-              </Select.Option>
-            ))}
-          </Select>
-        </Form.Item>
-        <Form.Item>
-          <Button className="btn btn-blue" type="primary" htmlType="submit">
+    <Dialog open={isIncomeModalVisible} onOpenChange={(open) => !open && handleClose()}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <PlusCircle className="h-5 w-5 text-emerald-500" />
             Add Income
-          </Button>
-        </Form.Item>
-      </Form>
-    </Modal>
-  )
+          </DialogTitle>
+        </DialogHeader>
+
+        <form ref={formRef} onSubmit={handleSubmit} className="space-y-4 py-2">
+          {/* Name */}
+          <div className="space-y-2">
+            <Label htmlFor="income-name">Transaction Name</Label>
+            <Input
+              id="income-name"
+              type="text"
+              placeholder="e.g. Monthly Salary"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+            />
+          </div>
+
+          {/* Amount */}
+          <div className="space-y-2">
+            <Label htmlFor="income-amount">Amount (₹)</Label>
+            <Input
+              id="income-amount"
+              type="number"
+              placeholder="0.00"
+              min="0"
+              step="0.01"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              required
+            />
+          </div>
+
+          {/* Date */}
+          <div className="space-y-2">
+            <Label htmlFor="income-date">Date</Label>
+            <Input
+              id="income-date"
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              required
+            />
+          </div>
+
+          {/* Tag */}
+          <div className="space-y-2">
+            <Label>Category Tag</Label>
+            <Select value={tag} onValueChange={setTag} required>
+              <SelectTrigger>
+                <SelectValue placeholder="Select a tag" />
+              </SelectTrigger>
+              <SelectContent>
+                {incomeTags.length === 0 ? (
+                  <SelectItem value="none" disabled>No tags yet — add in Manage Tags</SelectItem>
+                ) : (
+                  incomeTags.map((t) => (
+                    <SelectItem key={t} value={t}>{t}</SelectItem>
+                  ))
+                )}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <DialogFooter className="pt-2">
+            <Button type="button" variant="outline" onClick={handleClose}>Cancel</Button>
+            <Button type="submit" variant="income" disabled={loading} className="gap-2">
+              {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+              Add Income
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
 }
 
 export default AddIncomeModal;
