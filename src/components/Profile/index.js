@@ -1,11 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { auth, db } from "../../firebase";
 import { useAuthState } from "react-firebase-hooks/auth";
-import { signOut } from "firebase/auth";
 import { toast } from "react-toastify";
 import { doc, updateDoc, getDoc } from "firebase/firestore";
-import { useNavigate } from "react-router-dom";
-import { LogOut, Save, Tag, Loader2 } from "lucide-react";
+import { Save, Tag, Loader2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -20,16 +18,19 @@ import { Label } from "../ui/label";
 function ProfileModal({ isVisible, handleCancel, expenseTags, setExpenseTags, incomeTags, setIncomeTags }) {
   const [user] = useAuthState(auth);
   const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
 
+  // Only fetch tags when the modal is OPENED — not on every user change.
+  // This avoids the "Failed to load tags" error on the signup page where
+  // setExpenseTags / setIncomeTags are not passed.
   useEffect(() => {
-    if (user) {
+    if (isVisible && user && typeof setExpenseTags === "function") {
       fetchTags();
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isVisible, user]);
 
   const fetchTags = async () => {
+    if (!user || typeof setExpenseTags !== "function") return;
     setLoading(true);
     try {
       const docRef = doc(db, "users", user.uid);
@@ -48,6 +49,7 @@ function ProfileModal({ isVisible, handleCancel, expenseTags, setExpenseTags, in
   };
 
   const saveTags = async () => {
+    if (!user || typeof setExpenseTags !== "function") return;
     setLoading(true);
     try {
       const userRef = doc(db, "users", user.uid);
@@ -61,21 +63,6 @@ function ProfileModal({ isVisible, handleCancel, expenseTags, setExpenseTags, in
       toast.error("Failed to update tags");
     }
     setLoading(false);
-  };
-
-  const logoutFunc = () => {
-    try {
-      signOut(auth)
-        .then(() => {
-          toast.success("Logged out successfully");
-          navigate("/");
-        })
-        .catch((error) => {
-          toast.error(error.message);
-        });
-    } catch (e) {
-      toast.error(e.message);
-    }
   };
 
   return (
@@ -100,16 +87,21 @@ function ProfileModal({ isVisible, handleCancel, expenseTags, setExpenseTags, in
             </Label>
             <Input
               id="expense-tags"
-              value={expenseTags?.join(", ")}
+              value={expenseTags?.join(", ") || ""}
               onChange={(e) =>
-                setExpenseTags(e.target.value.split(",").map((tag) => tag.trim()).filter(Boolean))
+                setExpenseTags && setExpenseTags(
+                  e.target.value.split(",").map((tag) => tag.trim()).filter(Boolean)
+                )
               }
               placeholder="Food, Transport, Bills, Shopping"
             />
             {expenseTags?.length > 0 && (
               <div className="flex flex-wrap gap-1.5 mt-2">
                 {expenseTags.map((tag) => (
-                  <span key={tag} className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-400 border border-rose-200 dark:border-rose-800">
+                  <span
+                    key={tag}
+                    className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-400 border border-rose-200 dark:border-rose-800"
+                  >
                     {tag}
                   </span>
                 ))}
@@ -125,16 +117,21 @@ function ProfileModal({ isVisible, handleCancel, expenseTags, setExpenseTags, in
             </Label>
             <Input
               id="income-tags"
-              value={incomeTags?.join(", ")}
+              value={incomeTags?.join(", ") || ""}
               onChange={(e) =>
-                setIncomeTags(e.target.value.split(",").map((tag) => tag.trim()).filter(Boolean))
+                setIncomeTags && setIncomeTags(
+                  e.target.value.split(",").map((tag) => tag.trim()).filter(Boolean)
+                )
               }
               placeholder="Salary, Freelance, Investment, Gift"
             />
             {incomeTags?.length > 0 && (
               <div className="flex flex-wrap gap-1.5 mt-2">
                 {incomeTags.map((tag) => (
-                  <span key={tag} className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
+                  <span
+                    key={tag}
+                    className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800"
+                  >
                     {tag}
                   </span>
                 ))}
@@ -143,39 +140,22 @@ function ProfileModal({ isVisible, handleCancel, expenseTags, setExpenseTags, in
           </div>
         </div>
 
-        {/* User Info */}
-        {user && (
-          <div className="flex items-center gap-3 p-3 rounded-lg bg-muted border border-border">
-            <img
-              src={user.photoURL || ""}
-              alt="User"
-              className="h-9 w-9 rounded-full object-cover border border-border"
-              onError={(e) => { e.target.style.display = "none"; }}
-            />
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-foreground truncate">{user.displayName || "User"}</p>
-              <p className="text-xs text-muted-foreground truncate">{user.email}</p>
-            </div>
-          </div>
-        )}
-
-        {/* Actions */}
+        {/* Save Button */}
         <div className="flex gap-2 pt-2">
+          <Button variant="outline" className="flex-1" onClick={handleCancel}>
+            Cancel
+          </Button>
           <Button
             className="flex-1 gap-2"
             onClick={saveTags}
             disabled={loading}
           >
-            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+            {loading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Save className="h-4 w-4" />
+            )}
             Save Tags
-          </Button>
-          <Button
-            variant="outline"
-            className="gap-2 text-destructive border-destructive/30 hover:bg-destructive/10 hover:text-destructive"
-            onClick={logoutFunc}
-          >
-            <LogOut className="h-4 w-4" />
-            Logout
           </Button>
         </div>
       </DialogContent>
