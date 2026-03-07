@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import moment from "moment";
 import { parse, unparse } from "papaparse";
 import { toast } from "react-toastify";
@@ -12,6 +12,7 @@ import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Badge } from "../ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "../ui/table";
@@ -25,6 +26,18 @@ import {
   AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle,
   AlertDialogDescription, AlertDialogFooter,
 } from "../ui/alert-dialog";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "../ui/pagination";
+
+const ROWS_PER_PAGE = 10;
+
 
 function TransactionsTable({
   transactions, addTransaction, updateTransaction, deleteTransaction,
@@ -62,7 +75,13 @@ function TransactionsTable({
   const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
   const [transactionToDelete, setTransactionToDelete] = useState(null);
 
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
 
+  // Reset to page 1 whenever filters / sort change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, typeFilter, sortKey, selectedTag, startDate, endDate]);
 
   // CSV Import
   async function importFromCsv(event) {
@@ -117,6 +136,27 @@ function TransactionsTable({
     }
     return 0;
   });
+
+  // Pagination derived values
+  const totalPages = Math.max(1, Math.ceil(sortedTransactions.length / ROWS_PER_PAGE));
+  const paginatedTransactions = sortedTransactions.slice(
+    (currentPage - 1) * ROWS_PER_PAGE,
+    currentPage * ROWS_PER_PAGE
+  );
+
+  // Build visible page numbers with ellipsis
+  const getPageNumbers = () => {
+    if (totalPages <= 7) return Array.from({ length: totalPages }, (_, i) => i + 1);
+    const pages = [];
+    pages.push(1);
+    if (currentPage > 4) pages.push("...");
+    const start = Math.max(2, currentPage - 1);
+    const end = Math.min(totalPages - 1, currentPage + 1);
+    for (let i = start; i <= end; i++) pages.push(i);
+    if (currentPage < totalPages - 3) pages.push("...");
+    pages.push(totalPages);
+    return pages;
+  };
 
   // Open Edit Modal
   const openEditModal = (transaction) => {
@@ -295,13 +335,13 @@ function TransactionsTable({
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
       {/* Main Table Card */}
-      <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
-        {/* Table Header / Controls */}
-        <div className="p-4 sm:p-6 border-b border-border space-y-4">
+      <Card className="overflow-hidden shadow-md">
+        {/* Card Header / Controls */}
+        <CardHeader className="border-b border-border pb-0 space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-bold text-foreground">My Transactions</h2>
-            <span className="text-sm text-muted-foreground">
-              {sortedTransactions.length} transactions
+            <CardTitle className="text-xl">My Transactions</CardTitle>
+            <span className="inline-flex items-center rounded-full border border-border px-2.5 py-0.5 text-xs font-medium text-muted-foreground bg-muted">
+              {sortedTransactions.length} transaction{sortedTransactions.length !== 1 ? "s" : ""}
             </span>
           </div>
 
@@ -426,8 +466,13 @@ function TransactionsTable({
               style={{ display: "none" }}
             />
           </div>
-        </div>
 
+          {/* bottom spacing inside CardHeader */}
+          <div className="pb-2" />
+        </CardHeader>
+
+        {/* Table in CardContent */}
+        <CardContent className="p-0">
         {/* Table */}
         {sortedTransactions.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 gap-3 text-muted-foreground">
@@ -448,7 +493,7 @@ function TransactionsTable({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {sortedTransactions.map((transaction) => (
+              {paginatedTransactions.map((transaction) => (
                 <TableRow key={transaction.id} className="group">
                   <TableCell className="font-medium text-foreground">{transaction.name}</TableCell>
                   <TableCell className={transaction.type === "income" ? "text-emerald-600 dark:text-emerald-400 font-semibold" : "text-rose-600 dark:text-rose-400 font-semibold"}>
@@ -488,7 +533,64 @@ function TransactionsTable({
             </TableBody>
           </Table>
         )}
-      </div>
+
+        {/* ─── Pagination Bar ─── */}
+        {totalPages > 1 && (
+          <div className="border-t border-border px-4 py-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+            {/* Row summary */}
+            <p className="text-xs text-muted-foreground order-2 sm:order-1">
+              Showing{" "}
+              <span className="font-medium text-foreground">
+                {Math.min((currentPage - 1) * ROWS_PER_PAGE + 1, sortedTransactions.length)}
+              </span>
+              {"–"}
+              <span className="font-medium text-foreground">
+                {Math.min(currentPage * ROWS_PER_PAGE, sortedTransactions.length)}
+              </span>{" "}
+              of{" "}
+              <span className="font-medium text-foreground">{sortedTransactions.length}</span>{" "}
+              transactions
+            </p>
+
+            {/* Page links */}
+            <Pagination className="order-1 sm:order-2 w-auto">
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    className={currentPage === 1 ? "pointer-events-none opacity-40" : ""}
+                  />
+                </PaginationItem>
+
+                {getPageNumbers().map((page, idx) =>
+                  page === "..." ? (
+                    <PaginationItem key={`ellipsis-${idx}`}>
+                      <PaginationEllipsis />
+                    </PaginationItem>
+                  ) : (
+                    <PaginationItem key={page}>
+                      <PaginationLink
+                        isActive={page === currentPage}
+                        onClick={() => setCurrentPage(page)}
+                      >
+                        {page}
+                      </PaginationLink>
+                    </PaginationItem>
+                  )
+                )}
+
+                <PaginationItem>
+                  <PaginationNext
+                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                    className={currentPage === totalPages ? "pointer-events-none opacity-40" : ""}
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+          </div>
+        )}
+        </CardContent>
+      </Card>
 
       {/* ─── Edit Dialog ─── */}
       <Dialog open={isEditModalVisible} onOpenChange={(open) => !open && handleEditCancel()}>
