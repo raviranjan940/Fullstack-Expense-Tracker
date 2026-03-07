@@ -16,7 +16,7 @@ const socialLinks = [
 
 const Footer = () => {
   const handleContactDeveloper = () => {
-    window.open('https://wa.me/7479410130', '_blank');
+    window.open('https://wa.me/6204743523', '_blank');
   };
 
   return (
