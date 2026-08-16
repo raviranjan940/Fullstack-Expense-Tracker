@@ -1,12 +1,10 @@
-import React, { useEffect, useState } from "react";
-import { auth } from "../../firebase";
-import { useAuthState } from "react-firebase-hooks/auth";
+﻿import React, { useEffect, useState } from "react";
+import { useUser, useClerk } from "@clerk/clerk-react";
 import { useNavigate } from "react-router-dom";
-import { signOut } from "firebase/auth";
 import { toast } from "react-toastify";
-import { Sun, Moon, Tags, TrendingUp, LogOut, ChevronDown } from "lucide-react";
-import { useTheme } from "../../context/ThemeContext";
-import { Button } from "../ui/button";
+import { Sun, Moon, Tags, Settings, TrendingUp, LogOut, ChevronDown } from "lucide-react";
+import { useTheme } from "@/context/ThemeContext";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,12 +12,13 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "../ui/dropdown-menu";
-import ProfileModal from "../Profile";
-import userImg from "../../assets/user.svg";
+} from "@/components/ui/dropdown-menu";
+import ProfileModal from "@/components/Profile";
+import userImg from "@/assets/user.svg";
 
 function Header({ expenseTags, incomeTags, setExpenseTags, setIncomeTags }) {
-  const [user, loading] = useAuthState(auth);
+  const { isLoaded, user } = useUser();
+  const { signOut } = useClerk();
   const [isProfileModalVisible, setIsProfileModalVisible] = useState(false);
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
@@ -28,32 +27,30 @@ function Header({ expenseTags, incomeTags, setExpenseTags, setIncomeTags }) {
   const handleProfileCancel = () => setIsProfileModalVisible(false);
 
   useEffect(() => {
-    if (user) {
+    if (isLoaded && user) {
       navigate("/dashboard");
     }
-  }, [user, loading, navigate]);
+  }, [user, isLoaded, navigate]);
 
   const handleLogout = () => {
-    try {
-      signOut(auth)
-        .then(() => {
-          toast.success("Logged out successfully");
-          navigate("/");
-        })
-        .catch((error) => {
-          toast.error(error.message);
-        });
-    } catch (e) {
-      toast.error(e.message);
-    }
+    signOut()
+      .then(() => {
+        toast.success("Logged out successfully");
+        navigate("/");
+      })
+      .catch((error) => {
+        toast.error(error.message || "Couldn't log out");
+      });
   };
 
   const logoClick = () => {
     window.open("https://www.satyalok.in", "_blank");
   };
 
-  // Determine avatar image — Google photos need referrerPolicy
-  const avatarSrc = user?.photoURL ? user.photoURL : userImg;
+  // Determine avatar image — Clerk avatars need referrerPolicy
+  const avatarSrc = user?.imageUrl ? user.imageUrl : userImg;
+  const userEmail = user?.primaryEmailAddress?.emailAddress || user?.emailAddresses?.[0]?.emailAddress || "";
+  const userName = user?.firstName || (userEmail ? userEmail.split("@")[0] : "Account");
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-border bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/60 transition-colors">
@@ -63,13 +60,13 @@ function Header({ expenseTags, incomeTags, setExpenseTags, setIncomeTags }) {
           {/* Logo */}
           <button
             onClick={logoClick}
-            className="flex items-center gap-2 font-bold text-xl text-foreground hover:text-primary transition-colors group"
+            className="flex items-center gap-2 font-display font-bold text-xl text-foreground hover:text-primary transition-colors group"
           >
             <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center shadow-md group-hover:shadow-primary/40 transition-shadow">
               <TrendingUp className="h-5 w-5 text-primary-foreground" />
             </div>
             <span>
-              Spendly<span className="text-primary font-extrabold">.</span>
+              Spendly<span className="text-seal font-extrabold">.</span>
             </span>
           </button>
 
@@ -104,7 +101,7 @@ function Header({ expenseTags, incomeTags, setExpenseTags, setIncomeTags }) {
                       <div className="relative h-8 w-8 rounded-full overflow-hidden border-2 border-primary/20">
                         <img
                           src={avatarSrc}
-                          alt={user.displayName || "User"}
+                          alt={userName}
                           referrerPolicy="no-referrer"
                           className="h-full w-full object-cover"
                           onError={(e) => {
@@ -115,7 +112,7 @@ function Header({ expenseTags, incomeTags, setExpenseTags, setIncomeTags }) {
                       </div>
                       {/* Name (hidden on very small screens) */}
                       <span className="hidden sm:block text-sm font-medium text-foreground max-w-[90px] truncate">
-                        {user.displayName?.split(" ")[0] || user.email?.split("@")[0] || "Account"}
+                        {userName}
                       </span>
                       <ChevronDown className="h-4 w-4 text-muted-foreground hidden sm:block" />
                     </button>
@@ -128,7 +125,7 @@ function Header({ expenseTags, incomeTags, setExpenseTags, setIncomeTags }) {
                         <div className="h-9 w-9 rounded-full overflow-hidden border border-border flex-shrink-0">
                           <img
                             src={avatarSrc}
-                            alt={user.displayName || "User"}
+                            alt={userName}
                             referrerPolicy="no-referrer"
                             className="h-full w-full object-cover"
                             onError={(e) => {
@@ -139,10 +136,10 @@ function Header({ expenseTags, incomeTags, setExpenseTags, setIncomeTags }) {
                         </div>
                         <div className="flex flex-col min-w-0">
                           <span className="text-sm font-semibold text-foreground truncate">
-                            {user.displayName || "User"}
+                            {userName}
                           </span>
                           <span className="text-xs text-muted-foreground truncate">
-                            {user.email}
+                            {userEmail}
                           </span>
                         </div>
                       </div>
@@ -150,13 +147,13 @@ function Header({ expenseTags, incomeTags, setExpenseTags, setIncomeTags }) {
 
                     <DropdownMenuSeparator />
 
-                    {/* Manage Tags */}
+                    {/* Settings */}
                     <DropdownMenuItem
                       onClick={showProfileModal}
                       className="cursor-pointer text-foreground"
                     >
-                      <Tags className="h-4 w-4 text-primary" />
-                      Manage Tags
+                      <Settings className="h-4 w-4 text-primary" />
+                      Settings
                     </DropdownMenuItem>
 
                     <DropdownMenuSeparator />

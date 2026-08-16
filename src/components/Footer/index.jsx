@@ -29,8 +29,8 @@ const Footer = () => {
               <div className="h-7 w-7 rounded-md bg-primary flex items-center justify-center">
                 <TrendingUp className="h-4 w-4 text-primary-foreground" />
               </div>
-              <span className="font-bold text-lg text-foreground">
-                Spendly<span className="text-primary">.</span>
+              <span className="font-display font-bold text-lg text-foreground">
+                Spendly<span className="text-seal">.</span>
               </span>
             </div>
             <p className="text-sm text-muted-foreground">

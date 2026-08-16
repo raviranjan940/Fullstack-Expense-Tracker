@@ -1,13 +1,17 @@
-import React, { useState } from "react";
+﻿import React, { useState } from "react";
 import moment from "moment";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../ui/dialog";
-import { Button } from "../ui/button";
-import { Input } from "../ui/input";
-import { Label } from "../ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MinusCircle, Loader2 } from "lucide-react";
+import { useCurrency } from "@/context/CurrencyContext";
+import { getCurrency } from "@/lib/currency";
 
 function AddExpenseModal({ isExpenseModalVisible, handleExpenseCancel, onFinish, expenseTags }) {
+  const { currency } = useCurrency();
+  const currencySymbol = getCurrency(currency).symbol;
   const [name, setName] = useState("");
   const [amount, setAmount] = useState("");
   const [date, setDate] = useState("");
@@ -57,7 +61,7 @@ function AddExpenseModal({ isExpenseModalVisible, handleExpenseCancel, onFinish,
 
           {/* Amount */}
           <div className="space-y-2">
-            <Label htmlFor="expense-amount">Amount (₹)</Label>
+            <Label htmlFor="expense-amount">Amount ({currencySymbol})</Label>
             <Input
               id="expense-amount"
               type="number"

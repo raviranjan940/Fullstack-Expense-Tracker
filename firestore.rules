@@ -1,28 +1,20 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Users may only read/write their own profile document.
-    match /users/{userId} {
-      allow read: if request.auth != null && request.auth.uid == userId;
-      allow create: if request.auth != null && request.auth.uid == userId;
-      allow update: if request.auth != null && request.auth.uid == userId;
-      allow delete: if false;
-
-      // A user's transactions are fully owned by that user.
-      // This prevents the IDOR flaw where one user could read/alter another's data.
-      // NOTE: read rules must NOT reference request.resource (it is only
-      // available for writes, so including it denies every read).
-      match /transactions/{transactionId} {
-        allow read: if request.auth != null && request.auth.uid == userId;
-        allow create, update, delete: if request.auth != null
-          && request.auth.uid == userId
-          && request.resource.data.type in ['income', 'expense']
-          && request.resource.data.amount is number
-          && request.resource.data.amount >= 0
-          && request.resource.data.name is string
-          && request.resource.data.date is string
-          && request.resource.data.tag is string;
-      }
+    // ⚠️  IMPORTANT
+    // This app now authenticates with Clerk (not Firebase Auth). Cloud Firestore
+    // security rules CANNOT verify a Clerk session — `request.auth` here refers
+    // to Firebase Auth only, which is no longer used.
+    //
+    // The rules below are deliberately permissive so the demo keeps working.
+    // DO NOT use them in production. For production, bridge Clerk → Firebase:
+    //   1. Add a backend (e.g. Firebase Cloud Function / your API) that validates
+    //      the Clerk JWT (https://clerk.com/docs/backend-requests/handling/session-tokens)
+    //      and mints a Firebase custom token via the Admin SDK.
+    //   2. Call `signInWithCustomToken()` on the client to get a Firebase Auth user.
+    //   3. Restore strict per-user rules using request.auth.uid == userId.
+    match /users/{userId}/{document=**} {
+      allow read, write: if true;
     }
   }
 }

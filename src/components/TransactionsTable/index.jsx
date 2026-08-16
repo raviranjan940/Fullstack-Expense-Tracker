@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+﻿import React, { useState, useEffect } from "react";
 import moment from "moment";
 import { parse, unparse } from "papaparse";
 import { toast } from "react-toastify";
@@ -8,24 +8,24 @@ import {
   Pencil, Trash2, Search, Upload, Download, FileText,
   ArrowUpDown, CalendarRange, Tag, Filter, X, Loader2,
 } from "lucide-react";
-import { Button } from "../ui/button";
-import { Input } from "../ui/input";
-import { Label } from "../ui/label";
-import { Badge } from "../ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
-} from "../ui/table";
+} from "@/components/ui/table";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "../ui/select";
+} from "@/components/ui/select";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
-} from "../ui/dialog";
+} from "@/components/ui/dialog";
 import {
   AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle,
   AlertDialogDescription, AlertDialogFooter,
-} from "../ui/alert-dialog";
+} from "@/components/ui/alert-dialog";
 import {
   Pagination,
   PaginationContent,
@@ -34,7 +34,9 @@ import {
   PaginationLink,
   PaginationNext,
   PaginationPrevious,
-} from "../ui/pagination";
+} from "@/components/ui/pagination";
+import { useCurrency } from "@/context/CurrencyContext";
+import { getCurrency, formatNumber, formatAmount } from "@/lib/currency";
 
 const ROWS_PER_PAGE = 10;
 
@@ -43,6 +45,8 @@ function TransactionsTable({
   transactions, addTransaction, updateTransaction, deleteTransaction,
   fetchTransactions, incomeTags, expenseTags,
 }) {
+  const { currency } = useCurrency();
+  const currencySymbol = getCurrency(currency).symbol;
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
   const [sortKey, setSortKey] = useState("");
@@ -322,7 +326,7 @@ function TransactionsTable({
         yPosition += 10;
         const tableColumn = ["Name", "Amount", "Tag", "Type", "Date"];
         const tableRows = filteredData.map((t) => [
-          t.name, `Rs ${t.amount.toFixed(2)}`, t.tag,
+          t.name, formatAmount(t.amount, currency), t.tag,
           t.type.charAt(0).toUpperCase() + t.type.slice(1), t.date,
         ]);
         doc.autoTable({
@@ -387,8 +391,8 @@ function TransactionsTable({
         {/* Card Header / Controls */}
         <CardHeader className="border-b border-border pb-0 space-y-4">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-xl">My Transactions</CardTitle>
-            <span className="inline-flex items-center rounded-full border border-border px-2.5 py-0.5 text-xs font-medium text-muted-foreground bg-muted">
+            <CardTitle className="text-xl font-display">The Ledger</CardTitle>
+            <span className="inline-flex items-center rounded-full border border-border px-2.5 py-0.5 font-mono text-[11px] uppercase tracking-[0.12em] text-muted-foreground bg-muted">
               {sortedTransactions.length} transaction{sortedTransactions.length !== 1 ? "s" : ""}
             </span>
           </div>
@@ -532,23 +536,23 @@ function TransactionsTable({
           <Table>
             <TableHeader>
               <TableRow className="hover:bg-transparent">
-                <TableHead>Name</TableHead>
-                <TableHead>Amount</TableHead>
-                <TableHead>Tag</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead className="text-center">Actions</TableHead>
+                <TableHead className="font-mono text-[11px] uppercase tracking-[0.12em]">Name</TableHead>
+                <TableHead className="font-mono text-[11px] uppercase tracking-[0.12em] text-right">Amount</TableHead>
+                <TableHead className="font-mono text-[11px] uppercase tracking-[0.12em]">Tag</TableHead>
+                <TableHead className="font-mono text-[11px] uppercase tracking-[0.12em]">Type</TableHead>
+                <TableHead className="font-mono text-[11px] uppercase tracking-[0.12em]">Date</TableHead>
+                <TableHead className="font-mono text-[11px] uppercase tracking-[0.12em] text-center">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {paginatedTransactions.map((transaction) => (
                 <TableRow key={transaction.id} className="group">
                   <TableCell className="font-medium text-foreground">{transaction.name}</TableCell>
-                  <TableCell className={transaction.type === "income" ? "text-emerald-600 dark:text-emerald-400 font-semibold" : "text-rose-600 dark:text-rose-400 font-semibold"}>
-                    {transaction.type === "income" ? "+" : "-"}₹{transaction.amount.toFixed(2)}
+                  <TableCell className={`text-right font-mono tabular-nums font-semibold ${transaction.type === "income" ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}>
+                    {transaction.type === "income" ? "+" : "-"}{formatAmount(transaction.amount, currency)}
                   </TableCell>
                   <TableCell>
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-secondary text-secondary-foreground">
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-md border border-border bg-background font-mono text-[11px] uppercase tracking-wide text-secondary-foreground">
                       {transaction.tag}
                     </span>
                   </TableCell>
@@ -557,7 +561,7 @@ function TransactionsTable({
                       {transaction.type.charAt(0).toUpperCase() + transaction.type.slice(1)}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-muted-foreground text-sm">{transaction.date}</TableCell>
+                  <TableCell className="text-muted-foreground font-mono text-xs tabular-nums">{transaction.date}</TableCell>
                   <TableCell>
                     <div className="flex items-center justify-center gap-2">
                       <button
@@ -654,7 +658,7 @@ function TransactionsTable({
               <Input id="edit-name" value={editName} onChange={(e) => setEditName(e.target.value)} placeholder="Transaction name" />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit-amount">Amount (₹)</Label>
+              <Label htmlFor="edit-amount">Amount ({currencySymbol})</Label>
               <Input id="edit-amount" type="number" min="0" step="0.01" value={editAmount} onChange={(e) => setEditAmount(e.target.value)} placeholder="0.00" />
             </div>
             <div className="space-y-2">

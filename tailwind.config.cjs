@@ -2,8 +2,8 @@
 module.exports = {
   darkMode: ["class"],
   content: [
+    "./index.html",
     "./src/**/*.{js,jsx,ts,tsx}",
-    "./public/index.html",
   ],
   theme: {
     container: {
@@ -56,6 +56,12 @@ module.exports = {
           DEFAULT: "hsl(var(--expense))",
           foreground: "hsl(var(--expense-foreground))",
         },
+        seal: "hsl(var(--seal))",
+      },
+      fontFamily: {
+        sans: ['"Public Sans"', "system-ui", "-apple-system", "sans-serif"],
+        display: ['"Space Grotesk"', "sans-serif"],
+        mono: ['"IBM Plex Mono"', "ui-monospace", "monospace"],
       },
       borderRadius: {
         lg: "var(--radius)",

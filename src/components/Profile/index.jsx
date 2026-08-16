@@ -1,22 +1,32 @@
-import React, { useEffect, useState } from "react";
-import { auth, db } from "../../firebase";
-import { useAuthState } from "react-firebase-hooks/auth";
+﻿import React, { useEffect, useState } from "react";
+import { useUser } from "@clerk/clerk-react";
+import { db } from "@/lib/firebase";
 import { toast } from "react-toastify";
 import { doc, getDoc, setDoc } from "firebase/firestore";
-import { Save, Tag, Loader2 } from "lucide-react";
+import { Save, Tag, Loader2, Coins } from "lucide-react";
+import { useCurrency } from "@/context/CurrencyContext";
+import { CURRENCIES } from "@/lib/currency";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogDescription,
-} from "../ui/dialog";
-import { Button } from "../ui/button";
-import { Input } from "../ui/input";
-import { Label } from "../ui/label";
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 function ProfileModal({ isVisible, handleCancel, expenseTags, setExpenseTags, incomeTags, setIncomeTags }) {
-  const [user] = useAuthState(auth);
+  const { user } = useUser();
+  const { currency, setCurrency } = useCurrency();
   const [loading, setLoading] = useState(false);
   const [expenseDraft, setExpenseDraft] = useState("");
   const [incomeDraft, setIncomeDraft] = useState("");
@@ -38,7 +48,7 @@ function ProfileModal({ isVisible, handleCancel, expenseTags, setExpenseTags, in
     if (!user || typeof setExpenseTags !== "function") return;
     setLoading(true);
     try {
-      const docRef = doc(db, "users", user.uid);
+      const docRef = doc(db, "users", user.id);
       const docSnap = await getDoc(docRef);
       if (docSnap.exists()) {
         const fetchedExpenseTags = docSnap.data().expenseTags || [];
@@ -65,7 +75,7 @@ function ProfileModal({ isVisible, handleCancel, expenseTags, setExpenseTags, in
     try {
       const newExpenseTags = parseTags(expenseDraft);
       const newIncomeTags = parseTags(incomeDraft);
-      const userRef = doc(db, "users", user.uid);
+      const userRef = doc(db, "users", user.id);
       await setDoc(
         userRef,
         {
@@ -90,14 +100,39 @@ function ProfileModal({ isVisible, handleCancel, expenseTags, setExpenseTags, in
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Tag className="h-5 w-5 text-primary" />
-            Manage Your Tags
+            Settings
           </DialogTitle>
           <DialogDescription>
-            Add custom tags (comma-separated) for categorizing your transactions.
+            Manage your preferred currency and transaction tags.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-5 py-2">
+          {/* Currency */}
+          <div className="space-y-2">
+            <Label htmlFor="currency" className="flex items-center gap-2">
+              <Coins className="h-4 w-4 text-primary" />
+              Currency
+            </Label>
+            <Select value={currency} onValueChange={setCurrency}>
+              <SelectTrigger id="currency" className="w-full">
+                <SelectValue placeholder="Select currency" />
+              </SelectTrigger>
+              <SelectContent>
+                {CURRENCIES.map((c) => (
+                  <SelectItem key={c.code} value={c.code}>
+                    {c.symbol} {c.code} &mdash; {c.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              Applies to all balances and transaction amounts.
+            </p>
+          </div>
+
+          <div className="h-px bg-border" />
+
           {/* Expense Tags */}
           <div className="space-y-2">
             <Label htmlFor="expense-tags" className="flex items-center gap-2">

@@ -1,4 +1,4 @@
-import React from "react";
+﻿import React from "react";
 import { CSVLink } from "react-csv";
 import { AlertTriangle, Download, Trash2, X } from "lucide-react";
 import {
@@ -8,8 +8,8 @@ import {
   AlertDialogTitle,
   AlertDialogDescription,
   AlertDialogFooter,
-} from "../ui/alert-dialog";
-import { Button } from "../ui/button";
+} from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
 
 function ResetWarningModal({ isVisible, handleCancel, handleConfirm, transactions }) {
   const headers = [
@@ -46,7 +46,7 @@ const csvData = transactions.map((transaction) => ({
               This action will <strong>permanently delete</strong> all your transaction history from the database. This cannot be undone.
             </p>
             <p className="text-amber-600 dark:text-amber-400 font-medium">
-              💡 We recommend exporting your data as CSV before proceeding.
+              ðŸ’¡ We recommend exporting your data as CSV before proceeding.
             </p>
           </AlertDialogDescription>
         </AlertDialogHeader>

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+﻿import React, { useEffect, useState } from "react";
 import {
   addDoc,
   collection,
@@ -8,21 +8,21 @@ import {
   query,
   updateDoc,
 } from "firebase/firestore";
-import { useAuthState } from "react-firebase-hooks/auth";
+import { useUser } from "@clerk/clerk-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 
-import TransactionsTable from "../components/TransactionsTable";
-import AddExpenseModal from "../components/Modals/addExpense";
-import AddIncomeModal from "../components/Modals/addIncome";
-import ResetWarningModal from "../components/Modals/resetBalance";
+import TransactionsTable from "@/components/TransactionsTable";
+import AddExpenseModal from "@/components/Modals/addExpense";
+import AddIncomeModal from "@/components/Modals/addIncome";
+import ResetWarningModal from "@/components/Modals/resetBalance";
 
-import Loader from "../components/Loader";
-import Header from "../components/Header";
-import Cards from "../components/Cards";
-import Footer from "../components/Footer";
+import Loader from "@/components/Loader";
+import Header from "@/components/Header";
+import Cards from "@/components/Cards";
+import Footer from "@/components/Footer";
 
-import { auth, db } from "../firebase";
+import { db } from "@/lib/firebase";
 
 function Dashboard() {
   // Modal Visibility States
@@ -44,7 +44,7 @@ function Dashboard() {
   const [incomeTags, setIncomeTags] = useState([]);
 
   // Authentication State
-  const [user, authLoading] = useAuthState(auth);
+  const { isLoaded: authLoading, user } = useUser();
   const navigate = useNavigate();
 
   // Auth Guard: redirect unauthenticated users away from the dashboard
@@ -100,7 +100,7 @@ function Dashboard() {
   async function addTransaction(transaction, isBulk = false) {
     if (!user) return;
     try {
-      await addDoc(collection(db, `users/${user.uid}/transactions`), transaction);
+      await addDoc(collection(db, `users/${user.id}/transactions`), transaction);
       if (!isBulk) toast.success("Transaction Added!");
       await fetchTransactions();
     } catch (error) {
@@ -113,7 +113,7 @@ function Dashboard() {
   async function updateTransaction(updatedTransaction) {
     if (!user) return;
     try {
-      const transactionDocRef = doc(db, `users/${user.uid}/transactions/${updatedTransaction.id}`);
+      const transactionDocRef = doc(db, `users/${user.id}/transactions/${updatedTransaction.id}`);
       await updateDoc(transactionDocRef, {
         name: updatedTransaction.name,
         amount: updatedTransaction.amount,
@@ -133,7 +133,7 @@ function Dashboard() {
   async function deleteTransaction(transactionId) {
     if (!user) return;
     try {
-      const transactionDocRef = doc(db, `users/${user.uid}/transactions/${transactionId}`);
+      const transactionDocRef = doc(db, `users/${user.id}/transactions/${transactionId}`);
       await deleteDoc(transactionDocRef);
       toast.success("Transaction deleted successfully!");
       await fetchTransactions();
@@ -152,7 +152,7 @@ function Dashboard() {
 
     setLoading(true);
     try {
-      const q = query(collection(db, `users/${user.uid}/transactions`));
+      const q = query(collection(db, `users/${user.id}/transactions`));
       const querySnapshot = await getDocs(q);
       const transactionsArray = querySnapshot.docs.map((docSnapshot) => ({
         id: docSnapshot.id,
@@ -190,7 +190,7 @@ function Dashboard() {
     if (!user) return;
 
     try {
-      const q = query(collection(db, `users/${user.uid}/transactions`));
+      const q = query(collection(db, `users/${user.id}/transactions`));
       const querySnapshot = await getDocs(q);
       const deletePromises = querySnapshot.docs.map((docSnapshot) =>
         deleteDoc(docSnapshot.ref)
@@ -209,7 +209,7 @@ function Dashboard() {
     }
   }
 
-  if (authLoading) return <Loader />;
+  if (!authLoading) return <Loader />;
   if (!user) return null;
 
   return (

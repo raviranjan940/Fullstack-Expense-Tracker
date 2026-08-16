@@ -1,59 +1,64 @@
+/* Import fonts: Space Grotesk (display), Public Sans (body), IBM Plex Mono (ledger figures) */
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222 47% 11%;
+    --background: 214 16% 97%;
+    --foreground: 220 40% 12%;
     --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    --card-foreground: 220 40% 12%;
     --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
-    --primary: 246 83% 60%;
+    --popover-foreground: 220 40% 12%;
+    --primary: 216 52% 27%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 220 14% 96%;
-    --secondary-foreground: 222 47% 11%;
-    --muted: 220 14% 96%;
-    --muted-foreground: 215 16% 47%;
-    --accent: 246 83% 97%;
-    --accent-foreground: 246 83% 40%;
-    --destructive: 0 84% 60%;
+    --secondary: 214 18% 93%;
+    --secondary-foreground: 220 40% 12%;
+    --muted: 214 18% 93%;
+    --muted-foreground: 218 12% 44%;
+    --accent: 216 52% 96%;
+    --accent-foreground: 216 52% 27%;
+    --destructive: 6 70% 48%;
     --destructive-foreground: 0 0% 100%;
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
-    --ring: 246 83% 60%;
+    --border: 214 15% 90%;
+    --input: 214 15% 90%;
+    --ring: 216 52% 40%;
     --radius: 0.75rem;
-    --income: 142 72% 29%;
+    --income: 160 72% 30%;
     --income-foreground: 0 0% 100%;
-    --expense: 0 84% 60%;
+    --expense: 6 70% 48%;
     --expense-foreground: 0 0% 100%;
+    --seal: 42 60% 44%;
   }
 
   .dark {
-    --background: 222 47% 7%;
-    --foreground: 210 40% 98%;
-    --card: 222 47% 10%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222 47% 10%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 246 83% 65%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 217 32% 17%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217 32% 17%;
-    --muted-foreground: 215 20% 65%;
-    --accent: 217 32% 17%;
-    --accent-foreground: 246 83% 65%;
-    --destructive: 0 62% 55%;
+    --background: 220 42% 6%;
+    --foreground: 214 32% 93%;
+    --card: 220 35% 9%;
+    --card-foreground: 214 32% 93%;
+    --popover: 220 35% 9%;
+    --popover-foreground: 214 32% 93%;
+    --primary: 216 55% 66%;
+    --primary-foreground: 220 40% 10%;
+    --secondary: 218 30% 16%;
+    --secondary-foreground: 214 32% 93%;
+    --muted: 218 30% 16%;
+    --muted-foreground: 216 20% 68%;
+    --accent: 218 30% 16%;
+    --accent-foreground: 216 55% 72%;
+    --destructive: 6 66% 58%;
     --destructive-foreground: 0 0% 100%;
-    --border: 217 32% 20%;
-    --input: 217 32% 20%;
-    --ring: 246 83% 65%;
-    --income: 142 70% 45%;
+    --border: 218 28% 20%;
+    --input: 218 28% 20%;
+    --ring: 216 55% 70%;
+    --income: 160 66% 60%;
     --income-foreground: 0 0% 100%;
-    --expense: 0 84% 65%;
+    --expense: 6 70% 64%;
     --expense-foreground: 0 0% 100%;
+    --seal: 42 72% 60%;
   }
 }
 
@@ -61,20 +66,31 @@
   * {
     @apply border-border;
   }
+  html {
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
   body {
     @apply bg-background text-foreground;
-    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    font-family: 'Public Sans', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
+  h1, h2, h3, h4 {
+    @apply font-display tracking-tight;
+  }
 }
 
-/* Import Inter from Google Fonts */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
-
-/* Smooth transitions for theme switching */
-html {
-  transition: background-color 0.3s ease, color 0.3s ease;
+@layer components {
+  /* Faint ruled lines, like an accounting register */
+  .ledger-ruled {
+    background-image: repeating-linear-gradient(
+      to bottom,
+      transparent 0,
+      transparent 23px,
+      hsl(var(--border) / 0.7) 23px,
+      hsl(var(--border) / 0.7) 24px
+    );
+  }
 }
 
 /* Custom scrollbar */
