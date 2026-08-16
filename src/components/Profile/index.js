@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { auth, db } from "../../firebase";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { toast } from "react-toastify";
-import { doc, updateDoc, getDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc } from "firebase/firestore";
 import { Save, Tag, Loader2 } from "lucide-react";
 import {
   Dialog,
@@ -18,6 +18,11 @@ import { Label } from "../ui/label";
 function ProfileModal({ isVisible, handleCancel, expenseTags, setExpenseTags, incomeTags, setIncomeTags }) {
   const [user] = useAuthState(auth);
   const [loading, setLoading] = useState(false);
+  const [expenseDraft, setExpenseDraft] = useState("");
+  const [incomeDraft, setIncomeDraft] = useState("");
+
+  const parseTags = (str) =>
+    str.split(",").map((tag) => tag.trim()).filter(Boolean);
 
   // Only fetch tags when the modal is OPENED — not on every user change.
   // This avoids the "Failed to load tags" error on the signup page where
@@ -36,11 +41,17 @@ function ProfileModal({ isVisible, handleCancel, expenseTags, setExpenseTags, in
       const docRef = doc(db, "users", user.uid);
       const docSnap = await getDoc(docRef);
       if (docSnap.exists()) {
-        setExpenseTags(docSnap.data().expenseTags || []);
-        setIncomeTags(docSnap.data().incomeTags || []);
+        const fetchedExpenseTags = docSnap.data().expenseTags || [];
+        const fetchedIncomeTags = docSnap.data().incomeTags || [];
+        setExpenseTags(fetchedExpenseTags);
+        setIncomeTags(fetchedIncomeTags);
+        setExpenseDraft(fetchedExpenseTags.join(", "));
+        setIncomeDraft(fetchedIncomeTags.join(", "));
       } else {
         setExpenseTags([]);
         setIncomeTags([]);
+        setExpenseDraft("");
+        setIncomeDraft("");
       }
     } catch (error) {
       toast.error("Failed to load tags");
@@ -52,11 +63,19 @@ function ProfileModal({ isVisible, handleCancel, expenseTags, setExpenseTags, in
     if (!user || typeof setExpenseTags !== "function") return;
     setLoading(true);
     try {
+      const newExpenseTags = parseTags(expenseDraft);
+      const newIncomeTags = parseTags(incomeDraft);
       const userRef = doc(db, "users", user.uid);
-      await updateDoc(userRef, {
-        expenseTags: expenseTags,
-        incomeTags: incomeTags,
-      });
+      await setDoc(
+        userRef,
+        {
+          expenseTags: newExpenseTags,
+          incomeTags: newIncomeTags,
+        },
+        { merge: true }
+      );
+      setExpenseTags(newExpenseTags);
+      setIncomeTags(newIncomeTags);
       toast.success("Tags updated successfully!");
       handleCancel();
     } catch (error) {
@@ -87,17 +106,13 @@ function ProfileModal({ isVisible, handleCancel, expenseTags, setExpenseTags, in
             </Label>
             <Input
               id="expense-tags"
-              value={expenseTags?.join(", ") || ""}
-              onChange={(e) =>
-                setExpenseTags && setExpenseTags(
-                  e.target.value.split(",").map((tag) => tag.trim()).filter(Boolean)
-                )
-              }
+              value={expenseDraft}
+              onChange={(e) => setExpenseDraft(e.target.value)}
               placeholder="Food, Transport, Bills, Shopping"
             />
-            {expenseTags?.length > 0 && (
+            {parseTags(expenseDraft).length > 0 && (
               <div className="flex flex-wrap gap-1.5 mt-2">
-                {expenseTags.map((tag) => (
+                {parseTags(expenseDraft).map((tag) => (
                   <span
                     key={tag}
                     className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-400 border border-rose-200 dark:border-rose-800"
@@ -117,17 +132,13 @@ function ProfileModal({ isVisible, handleCancel, expenseTags, setExpenseTags, in
             </Label>
             <Input
               id="income-tags"
-              value={incomeTags?.join(", ") || ""}
-              onChange={(e) =>
-                setIncomeTags && setIncomeTags(
-                  e.target.value.split(",").map((tag) => tag.trim()).filter(Boolean)
-                )
-              }
+              value={incomeDraft}
+              onChange={(e) => setIncomeDraft(e.target.value)}
               placeholder="Salary, Freelance, Investment, Gift"
             />
-            {incomeTags?.length > 0 && (
+            {parseTags(incomeDraft).length > 0 && (
               <div className="flex flex-wrap gap-1.5 mt-2">
-                {incomeTags.map((tag) => (
+                {parseTags(incomeDraft).map((tag) => (
                   <span
                     key={tag}
                     className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800"

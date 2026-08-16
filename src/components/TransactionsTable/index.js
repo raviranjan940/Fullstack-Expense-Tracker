@@ -84,6 +84,11 @@ function TransactionsTable({
   }, [search, typeFilter, sortKey, selectedTag, startDate, endDate]);
 
   // CSV Import
+  function sanitizeCsvCell(value) {
+    const str = String(value ?? "");
+    return /^[=+\-@]/.test(str) ? `'${str}` : str;
+  }
+
   async function importFromCsv(event) {
     event.preventDefault();
     try {
@@ -93,24 +98,52 @@ function TransactionsTable({
         header: true,
         skipEmptyLines: true,
         complete: async function (results) {
+          let addedCount = 0;
+          let skippedCount = 0;
           for (const transaction of results.data) {
-            if (transaction.Name && transaction.Type && transaction.Date && transaction.Tag && transaction.Amount) {
-              const parsedDate = moment(transaction.Date, ["DD-MM-YYYY", "YYYY-MM-DD"], true);
-              if (!parsedDate.isValid()) {
-                toast.error(`Invalid date for "${transaction.Name}". Expected DD-MM-YYYY.`);
-                continue;
-              }
-              const newTransaction = {
-                name: transaction.Name, type: transaction.Type,
-                date: parsedDate.format("DD-MM-YYYY"),
-                tag: transaction.Tag, amount: parseFloat(transaction.Amount),
-              };
-              await addTransaction(newTransaction, true);
+            const isValidRow =
+              transaction.Name &&
+              transaction.Type &&
+              transaction.Date &&
+              transaction.Tag &&
+              transaction.Amount !== undefined &&
+              transaction.Amount !== "" &&
+              (transaction.Type === "income" || transaction.Type === "expense");
+            if (!isValidRow) {
+              skippedCount++;
+              continue;
             }
+            const parsedDate = moment(transaction.Date, ["DD-MM-YYYY", "YYYY-MM-DD"], true);
+            const parsedAmount = parseFloat(transaction.Amount);
+            if (!parsedDate.isValid()) {
+              toast.error(`Invalid date for "${transaction.Name}". Expected DD-MM-YYYY.`);
+              skippedCount++;
+              continue;
+            }
+            if (!Number.isFinite(parsedAmount) || parsedAmount < 0) {
+              toast.error(`Invalid amount for "${transaction.Name}".`);
+              skippedCount++;
+              continue;
+            }
+            const newTransaction = {
+              name: transaction.Name, type: transaction.Type,
+              date: parsedDate.format("DD-MM-YYYY"),
+              tag: transaction.Tag, amount: parsedAmount,
+            };
+            await addTransaction(newTransaction, true);
+            addedCount++;
           }
-          toast.success("All valid Transactions Added");
+          if (addedCount > 0) {
+            toast.success(`${addedCount} valid transaction${addedCount !== 1 ? "s" : ""} added`);
+          }
+          if (skippedCount > 0) {
+            toast.warn(`${skippedCount} row${skippedCount !== 1 ? "s" : ""} skipped`);
+          }
+          if (addedCount === 0 && skippedCount === 0) {
+            toast.error("No rows found in CSV");
+          }
           await fetchTransactions();
-          event.target.files = null;
+          event.target.value = "";
         },
         error: (error) => toast.error(`Error parsing CSV: ${error.message}`),
       });
@@ -122,23 +155,30 @@ function TransactionsTable({
     const searchMatch = search ? t.name.toLowerCase().includes(search.toLowerCase()) : true;
     const tagMatch = selectedTag && selectedTag !== "all" ? t.tag === selectedTag : true;
     const typeMatch = typeFilter && typeFilter !== "all" ? t.type === typeFilter : true;
-    const tDate = t.date ? moment(t.date, "DD-MM-YYYY").toDate() : new Date();
-    const startMatch = startDate ? tDate >= new Date(startDate) : true;
-    const endMatch = endDate ? tDate <= new Date(endDate + "T23:59:59") : true;
+    const tMoment = t.date ? moment(t.date, "DD-MM-YYYY", true) : null;
+    const startMatch = startDate
+      ? Boolean(tMoment && tMoment.isValid() && tMoment.isSameOrAfter(moment(startDate, "YYYY-MM-DD"), "day"))
+      : true;
+    const endMatch = endDate
+      ? Boolean(tMoment && tMoment.isValid() && tMoment.isSameOrBefore(moment(endDate, "YYYY-MM-DD"), "day"))
+      : true;
     return searchMatch && tagMatch && typeMatch && startMatch && endMatch;
   });
 
   let sortedTransactions = [...filteredTransactions].sort((a, b) => {
     if (sortKey === "date") {
-      return moment(a.date, "DD-MM-YYYY").toDate() - moment(b.date, "DD-MM-YYYY").toDate();
+      return moment(a.date, "DD-MM-YYYY", true).valueOf() - moment(b.date, "DD-MM-YYYY", true).valueOf();
     } else if (sortKey === "amount") {
-      return a.amount - b.amount;
+      return (a.amount || 0) - (b.amount || 0);
     }
     return 0;
   });
 
-  // Pagination derived values
+  // Clamp current page when the dataset shrinks
   const totalPages = Math.max(1, Math.ceil(sortedTransactions.length / ROWS_PER_PAGE));
+  useEffect(() => {
+    if (currentPage > totalPages) setCurrentPage(totalPages);
+  }, [currentPage, totalPages]);
   const paginatedTransactions = sortedTransactions.slice(
     (currentPage - 1) * ROWS_PER_PAGE,
     currentPage * ROWS_PER_PAGE
@@ -180,11 +220,15 @@ function TransactionsTable({
     if (!editName || !editAmount || !editDate || !editTag || !editType) {
       toast.error("Please fill all fields"); return;
     }
+    const parsedAmount = parseFloat(editAmount);
+    if (!Number.isFinite(parsedAmount) || parsedAmount < 0) {
+      toast.error("Please enter a valid amount"); return;
+    }
     setEditLoading(true);
     const updatedTransaction = {
       ...editingTransaction,
       name: editName,
-      amount: parseFloat(editAmount),
+      amount: parsedAmount,
       tag: editTag,
       type: editType,
       date: moment(editDate, "YYYY-MM-DD").format("DD-MM-YYYY"),
@@ -258,9 +302,12 @@ function TransactionsTable({
     const expenseTotal = filteredData.filter((t) => t.type === "expense").reduce((s, t) => s + t.amount, 0);
 
     if (exportFormat === "csv") {
-      const csvData = filteredData.map(({ name, type, date, tag, amount }) => [name, type, date, tag, amount]);
+      const csvData = filteredData.map(({ name, type, date, tag, amount }) => [
+        sanitizeCsvCell(name), sanitizeCsvCell(type), sanitizeCsvCell(date),
+        sanitizeCsvCell(tag), amount,
+      ]);
       const csv = unparse({ fields: ["Name", "Type", "Date", "Tag", "Amount"], data: csvData });
-      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url; link.download = "your_transactions_report.csv";
@@ -317,7 +364,8 @@ function TransactionsTable({
         const reader = new FileReader();
         reader.onload = (event) => {
           try {
-            doc.addImage(event.target.result, "JPEG", (doc.internal.pageSize.width - 80) / 2, 15, 80, 20);
+            const imgFormat = logoFile.type && logoFile.type.includes("png") ? "PNG" : "JPEG";
+            doc.addImage(event.target.result, imgFormat, (doc.internal.pageSize.width - 80) / 2, 15, 80, 20);
             yPosition = 45;
           } catch (e) { console.log("Logo error:", e); }
           addPdfContent();
@@ -618,8 +666,14 @@ function TransactionsTable({
               <Select value={editTag} onValueChange={setEditTag}>
                 <SelectTrigger><SelectValue placeholder="Select tag" /></SelectTrigger>
                 <SelectContent>
-                  {incomeTags.map((tag) => <SelectItem key={`i-${tag}`} value={tag}>{tag}</SelectItem>)}
-                  {expenseTags.map((tag) => <SelectItem key={`e-${tag}`} value={tag}>{tag}</SelectItem>)}
+                  {editType === "income"
+                    ? incomeTags.map((tag) => <SelectItem key={`i-${tag}`} value={tag}>{tag}</SelectItem>)
+                    : editType === "expense"
+                    ? expenseTags.map((tag) => <SelectItem key={`e-${tag}`} value={tag}>{tag}</SelectItem>)
+                    : <>
+                        {incomeTags.map((tag) => <SelectItem key={`i-${tag}`} value={tag}>{tag}</SelectItem>)}
+                        {expenseTags.map((tag) => <SelectItem key={`e-${tag}`} value={tag}>{tag}</SelectItem>)}
+                      </>}
                 </SelectContent>
               </Select>
             </div>

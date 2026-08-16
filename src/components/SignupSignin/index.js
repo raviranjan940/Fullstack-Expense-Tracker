@@ -79,7 +79,7 @@ function SignupSignin() {
       const createdAt = new Date();
       try {
         await setDoc(userRef, {
-          name: displayName ? displayName : name,
+          name: displayName ? displayName : name || "User",
           email,
           photoURL: photoURL ? photoURL : "",
           createdAt,

@@ -20,12 +20,17 @@ function ResetWarningModal({ isVisible, handleCancel, handleConfirm, transaction
     { label: "Name", key: "name" },
   ];
 
-  const csvData = transactions.map((transaction) => ({
-    type: transaction.type,
-    date: transaction.date,
+  const sanitizeCsvCell = (value) => {
+  const str = String(value ?? "");
+  return /^[=+\-@]/.test(str) ? `'${str}` : str;
+};
+
+const csvData = transactions.map((transaction) => ({
+    type: sanitizeCsvCell(transaction.type),
+    date: sanitizeCsvCell(transaction.date),
     amount: transaction.amount,
-    tag: transaction.tag,
-    name: transaction.name,
+    tag: sanitizeCsvCell(transaction.tag),
+    name: sanitizeCsvCell(transaction.name),
   }));
 
   return (

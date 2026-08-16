@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState } from "react";
 import moment from "moment";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../ui/dialog";
 import { Button } from "../ui/button";
@@ -13,7 +13,6 @@ function AddIncomeModal({ isIncomeModalVisible, handleIncomeCancel, onFinish, in
   const [date, setDate] = useState("");
   const [tag, setTag] = useState("");
   const [loading, setLoading] = useState(false);
-  const formRef = useRef(null);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -42,7 +41,7 @@ function AddIncomeModal({ isIncomeModalVisible, handleIncomeCancel, onFinish, in
           </DialogTitle>
         </DialogHeader>
 
-        <form ref={formRef} onSubmit={handleSubmit} className="space-y-4 py-2">
+        <form onSubmit={handleSubmit} className="space-y-4 py-2">
           {/* Name */}
           <div className="space-y-2">
             <Label htmlFor="income-name">Transaction Name</Label>

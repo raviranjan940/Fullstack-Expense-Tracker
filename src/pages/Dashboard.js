@@ -9,6 +9,7 @@ import {
   updateDoc,
 } from "firebase/firestore";
 import { useAuthState } from "react-firebase-hooks/auth";
+import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 
 import TransactionsTable from "../components/TransactionsTable";
@@ -43,7 +44,15 @@ function Dashboard() {
   const [incomeTags, setIncomeTags] = useState([]);
 
   // Authentication State
-  const [user] = useAuthState(auth);
+  const [user, authLoading] = useAuthState(auth);
+  const navigate = useNavigate();
+
+  // Auth Guard: redirect unauthenticated users away from the dashboard
+  useEffect(() => {
+    if (!authLoading && !user) {
+      navigate("/");
+    }
+  }, [user, authLoading, navigate]);
 
   // Modal Handlers
   const showExpenseModal = () => setIsExpenseModalVisible(true);
@@ -72,10 +81,15 @@ function Dashboard() {
 
   // Add New Transaction
   const onFinish = (values, type) => {
+    const amount = parseFloat(values.amount);
+    if (!Number.isFinite(amount) || amount < 0) {
+      toast.error("Please enter a valid amount");
+      return;
+    }
     const newTransaction = {
       type: type,
       date: values.date.format("DD-MM-YYYY"),
-      amount: parseFloat(values.amount),
+      amount: amount,
       tag: values.tag,
       name: values.name,
     };
@@ -84,6 +98,7 @@ function Dashboard() {
 
   // Function to Add Transaction to Firestore
   async function addTransaction(transaction, isBulk = false) {
+    if (!user) return;
     try {
       await addDoc(collection(db, `users/${user.uid}/transactions`), transaction);
       if (!isBulk) toast.success("Transaction Added!");
@@ -96,6 +111,7 @@ function Dashboard() {
 
   // Function to Update Transaction in Firestore
   async function updateTransaction(updatedTransaction) {
+    if (!user) return;
     try {
       const transactionDocRef = doc(db, `users/${user.uid}/transactions/${updatedTransaction.id}`);
       await updateDoc(transactionDocRef, {
@@ -115,6 +131,7 @@ function Dashboard() {
 
   // Function to Delete a Single Transaction from Firestore
   async function deleteTransaction(transactionId) {
+    if (!user) return;
     try {
       const transactionDocRef = doc(db, `users/${user.uid}/transactions/${transactionId}`);
       await deleteDoc(transactionDocRef);
@@ -192,6 +209,9 @@ function Dashboard() {
     }
   }
 
+  if (authLoading) return <Loader />;
+  if (!user) return null;
+
   return (
     <div>
       {/* Header Component */}
@@ -215,7 +235,6 @@ function Dashboard() {
             showExpenseModal={showExpenseModal}
             showIncomeModal={showIncomeModal}
             showWarningModal={showWarningModal}
-            reset={resetTransactions}
           />
 
           {/* Add Expense Modal */}

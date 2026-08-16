@@ -1,0 +1,28 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Users may only read/write their own profile document.
+    match /users/{userId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow create: if request.auth != null && request.auth.uid == userId;
+      allow update: if request.auth != null && request.auth.uid == userId;
+      allow delete: if false;
+
+      // A user's transactions are fully owned by that user.
+      // This prevents the IDOR flaw where one user could read/alter another's data.
+      // NOTE: read rules must NOT reference request.resource (it is only
+      // available for writes, so including it denies every read).
+      match /transactions/{transactionId} {
+        allow read: if request.auth != null && request.auth.uid == userId;
+        allow create, update, delete: if request.auth != null
+          && request.auth.uid == userId
+          && request.resource.data.type in ['income', 'expense']
+          && request.resource.data.amount is number
+          && request.resource.data.amount >= 0
+          && request.resource.data.name is string
+          && request.resource.data.date is string
+          && request.resource.data.tag is string;
+      }
+    }
+  }
+}
